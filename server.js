@@ -55,7 +55,95 @@ function writeData(data) {
   fs.writeFileSync(DATA_FILE, JSON.stringify(data, null, 2));
 }
 
+// Lưu dữ liệu năm học cũ
+function archiveSchoolYear(schoolYear) {
+  const archiveDir = 'archives';
+  if (!fs.existsSync(archiveDir)) {
+    fs.mkdirSync(archiveDir);
+  }
+  
+  const data = readData();
+  const yearViolations = data.violations.filter(v => v.nam_hoc === schoolYear);
+  
+  if (yearViolations.length > 0) {
+    const archiveFile = path.join(archiveDir, `${schoolYear}.json`);
+    const archiveData = {
+      nam_hoc: schoolYear,
+      violations: yearViolations,
+      archived_date: new Date().toISOString(),
+      total: yearViolations.length
+    };
+    fs.writeFileSync(archiveFile, JSON.stringify(archiveData, null, 2));
+    
+    // Xóa vi phạm của năm đó khỏi dữ liệu chính
+    data.violations = data.violations.filter(v => v.nam_hoc !== schoolYear);
+    writeData(data);
+    
+    return true;
+  }
+  return false;
+}
+
+// Lấy danh sách các năm đã lưu trữ
+function getArchivedYears() {
+  const archiveDir = 'archives';
+  if (!fs.existsSync(archiveDir)) {
+    return [];
+  }
+  
+  const files = fs.readdirSync(archiveDir);
+  return files
+    .filter(f => f.endsWith('.json'))
+    .map(f => {
+      const content = JSON.parse(fs.readFileSync(path.join(archiveDir, f), 'utf8'));
+      return {
+        nam_hoc: content.nam_hoc,
+        total: content.total,
+        archived_date: content.archived_date
+      };
+    })
+    .sort((a, b) => b.nam_hoc.localeCompare(a.nam_hoc));
+}
+
+// Lấy dữ liệu năm đã lưu trữ
+function getArchivedData(schoolYear) {
+  const archiveFile = path.join('archives', `${schoolYear}.json`);
+  if (fs.existsSync(archiveFile)) {
+    return JSON.parse(fs.readFileSync(archiveFile, 'utf8'));
+  }
+  return null;
+}
+
 initData();
+
+// API: Lưu trữ năm học (kết thúc năm)
+app.post('/api/archive-year', (req, res) => {
+  const { nam_hoc } = req.body;
+  const success = archiveSchoolYear(nam_hoc);
+  
+  if (success) {
+    updateTimestamp();
+    res.json({ success: true, message: `Đã lưu trữ năm học ${nam_hoc}` });
+  } else {
+    res.status(400).json({ success: false, message: 'Không có dữ liệu để lưu trữ' });
+  }
+});
+
+// API: Lấy danh sách các năm đã lưu trữ
+app.get('/api/archived-years', (req, res) => {
+  const years = getArchivedYears();
+  res.json(years);
+});
+
+// API: Lấy dữ liệu năm đã lưu trữ
+app.get('/api/archived-data/:year', (req, res) => {
+  const data = getArchivedData(req.params.year);
+  if (data) {
+    res.json(data);
+  } else {
+    res.status(404).json({ error: 'Không tìm thấy dữ liệu năm học này' });
+  }
+});
 
 // API: Lấy thời gian cập nhật cuối
 app.get('/api/last-update', (req, res) => {
@@ -214,6 +302,128 @@ app.get('/api/export-excel', async (req, res) => {
     // Gửi file
     res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
     res.setHeader('Content-Disposition', 'attachment; filename=Danh_Sach_Vi_Pham.xlsx');
+
+    await workbook.xlsx.write(res);
+    res.end();
+  } catch (error) {
+    console.error('Lỗi khi xuất Excel:', error);
+    res.status(500).json({ error: 'Lỗi khi xuất file Excel' });
+  }
+});
+
+// API: Xuất file Excel
+app.get('/api/export-excel', async (req, res) => {
+  try {
+    const data = readData();
+    const workbook = new ExcelJS.Workbook();
+    const worksheet = workbook.addWorksheet('Danh Sách Vi Phạm');
+
+    worksheet.columns = [
+      { header: 'STT', key: 'stt', width: 10 },
+      { header: 'Năm học', key: 'nam_hoc', width: 15 },
+      { header: 'Họ tên', key: 'ho_ten', width: 25 },
+      { header: 'Lớp', key: 'lop', width: 12 },
+      { header: 'Nội dung vi phạm', key: 'noi_dung_vi_pham', width: 50 },
+      { header: 'Ngày ghi nhận', key: 'ngay_tao', width: 20 }
+    ];
+
+    worksheet.getRow(1).font = { bold: true, size: 12 };
+    worksheet.getRow(1).fill = {
+      type: 'pattern',
+      pattern: 'solid',
+      fgColor: { argb: 'FF667eea' }
+    };
+    worksheet.getRow(1).alignment = { vertical: 'middle', horizontal: 'center' };
+
+    data.violations.forEach((v, index) => {
+      const row = worksheet.addRow({
+        stt: data.violations.length - index,
+        nam_hoc: v.nam_hoc,
+        ho_ten: v.ho_ten,
+        lop: v.lop,
+        noi_dung_vi_pham: v.noi_dung_vi_pham,
+        ngay_tao: new Date(v.ngay_tao).toLocaleString('vi-VN')
+      });
+
+      row.getCell(1).alignment = { horizontal: 'center' };
+      row.getCell(4).alignment = { horizontal: 'center' };
+    });
+
+    worksheet.eachRow((row) => {
+      row.eachCell((cell) => {
+        cell.border = {
+          top: { style: 'thin' },
+          left: { style: 'thin' },
+          bottom: { style: 'thin' },
+          right: { style: 'thin' }
+        };
+      });
+    });
+
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.setHeader('Content-Disposition', 'attachment; filename=Danh_Sach_Vi_Pham.xlsx');
+
+    await workbook.xlsx.write(res);
+    res.end();
+  } catch (error) {
+    console.error('Lỗi khi xuất Excel:', error);
+    res.status(500).json({ error: 'Lỗi khi xuất file Excel' });
+  }
+});
+
+// API: Xuất Excel cho năm đã lưu trữ
+app.get('/api/export-archived-excel/:year', async (req, res) => {
+  try {
+    const data = getArchivedData(req.params.year);
+    if (!data) {
+      return res.status(404).json({ error: 'Không tìm thấy dữ liệu' });
+    }
+
+    const workbook = new ExcelJS.Workbook();
+    const worksheet = workbook.addWorksheet(`Năm học ${data.nam_hoc}`);
+
+    worksheet.columns = [
+      { header: 'STT', key: 'stt', width: 10 },
+      { header: 'Họ tên', key: 'ho_ten', width: 25 },
+      { header: 'Lớp', key: 'lop', width: 12 },
+      { header: 'Nội dung vi phạm', key: 'noi_dung_vi_pham', width: 50 },
+      { header: 'Ngày ghi nhận', key: 'ngay_tao', width: 20 }
+    ];
+
+    worksheet.getRow(1).font = { bold: true, size: 12 };
+    worksheet.getRow(1).fill = {
+      type: 'pattern',
+      pattern: 'solid',
+      fgColor: { argb: 'FF667eea' }
+    };
+    worksheet.getRow(1).alignment = { vertical: 'middle', horizontal: 'center' };
+
+    data.violations.forEach((v, index) => {
+      const row = worksheet.addRow({
+        stt: index + 1,
+        ho_ten: v.ho_ten,
+        lop: v.lop,
+        noi_dung_vi_pham: v.noi_dung_vi_pham,
+        ngay_tao: new Date(v.ngay_tao).toLocaleString('vi-VN')
+      });
+
+      row.getCell(1).alignment = { horizontal: 'center' };
+      row.getCell(3).alignment = { horizontal: 'center' };
+    });
+
+    worksheet.eachRow((row) => {
+      row.eachCell((cell) => {
+        cell.border = {
+          top: { style: 'thin' },
+          left: { style: 'thin' },
+          bottom: { style: 'thin' },
+          right: { style: 'thin' }
+        };
+      });
+    });
+
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.setHeader('Content-Disposition', `attachment; filename=Vi_Pham_${data.nam_hoc}.xlsx`);
 
     await workbook.xlsx.write(res);
     res.end();

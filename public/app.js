@@ -269,3 +269,152 @@ window.addEventListener('offline', () => {
         clearInterval(autoSyncInterval);
     }
 });
+
+// === CHỨC NĂNG LƯU TRỮ NĂM HỌC ===
+
+// Hiển thị modal lưu trữ
+async function showArchiveModal() {
+    const modal = document.getElementById('archiveModal');
+    const select = document.getElementById('yearToArchive');
+    
+    // Lấy danh sách năm học từ dữ liệu hiện tại
+    const response = await fetch(`${API_URL}/violations`);
+    const violations = await response.json();
+    
+    const years = [...new Set(violations.map(v => v.nam_hoc))].sort().reverse();
+    
+    select.innerHTML = years.map(year => 
+        `<option value="${year}">${year}</option>`
+    ).join('');
+    
+    modal.style.display = 'block';
+}
+
+// Đóng modal lưu trữ
+function closeArchiveModal() {
+    document.getElementById('archiveModal').style.display = 'none';
+}
+
+// Lưu trữ năm học
+async function archiveYear() {
+    const year = document.getElementById('yearToArchive').value;
+    
+    if (!confirm(`Bạn có chắc muốn lưu trữ năm học ${year}?\n\nDữ liệu sẽ được chuyển vào kho lưu trữ và xóa khỏi danh sách hiện tại.`)) {
+        return;
+    }
+    
+    try {
+        const response = await fetch(`${API_URL}/archive-year`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ nam_hoc: year })
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            alert(`✅ ${result.message}`);
+            closeArchiveModal();
+            loadViolations();
+        } else {
+            alert(`❌ ${result.message}`);
+        }
+    } catch (error) {
+        console.error('Lỗi khi lưu trữ:', error);
+        alert('Có lỗi xảy ra khi lưu trữ năm học');
+    }
+}
+
+// Hiển thị modal xem năm cũ
+async function showViewArchiveModal() {
+    const modal = document.getElementById('viewArchiveModal');
+    const listDiv = document.getElementById('archivedYearsList');
+    
+    try {
+        const response = await fetch(`${API_URL}/archived-years`);
+        const years = await response.json();
+        
+        if (years.length === 0) {
+            listDiv.innerHTML = '<p style="text-align: center; color: #999;">Chưa có năm học nào được lưu trữ</p>';
+        } else {
+            listDiv.innerHTML = '<h3>Chọn năm học để xem:</h3>' + years.map(year => `
+                <div class="archived-year-item" onclick="viewArchivedYear('${year.nam_hoc}')">
+                    <strong>📅 Năm học: ${year.nam_hoc}</strong><br>
+                    <small>Tổng số vi phạm: ${year.total} | Lưu trữ: ${new Date(year.archived_date).toLocaleDateString('vi-VN')}</small>
+                </div>
+            `).join('');
+        }
+        
+        document.getElementById('archivedDataView').innerHTML = '';
+        modal.style.display = 'block';
+    } catch (error) {
+        console.error('Lỗi khi tải danh sách:', error);
+        alert('Có lỗi xảy ra khi tải danh sách năm học');
+    }
+}
+
+// Đóng modal xem năm cũ
+function closeViewArchiveModal() {
+    document.getElementById('viewArchiveModal').style.display = 'none';
+}
+
+// Xem dữ liệu năm đã lưu trữ
+async function viewArchivedYear(year) {
+    try {
+        const response = await fetch(`${API_URL}/archived-data/${year}`);
+        const data = await response.json();
+        
+        const viewDiv = document.getElementById('archivedDataView');
+        viewDiv.innerHTML = `
+            <h3 style="margin-top: 30px; color: #667eea;">📊 Dữ liệu năm học ${year}</h3>
+            <div style="margin-bottom: 15px;">
+                <button class="btn-export" onclick="exportArchivedToExcel('${year}')">📥 Xuất Excel</button>
+            </div>
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>STT</th>
+                            <th>Họ tên</th>
+                            <th>Lớp</th>
+                            <th>Nội dung vi phạm</th>
+                            <th>Ngày ghi nhận</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${data.violations.map((v, index) => `
+                            <tr>
+                                <td>${index + 1}</td>
+                                <td>${v.ho_ten}</td>
+                                <td>${v.lop}</td>
+                                <td>${v.noi_dung_vi_pham}</td>
+                                <td>${new Date(v.ngay_tao).toLocaleDateString('vi-VN')}</td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+            </div>
+        `;
+    } catch (error) {
+        console.error('Lỗi khi tải dữ liệu:', error);
+        alert('Có lỗi xảy ra khi tải dữ liệu năm học');
+    }
+}
+
+// Xuất Excel cho năm đã lưu trữ
+async function exportArchivedToExcel(year) {
+    window.location.href = `${API_URL}/export-archived-excel/${year}`;
+}
+
+// Đóng modal khi click bên ngoài
+window.onclick = function(event) {
+    const archiveModal = document.getElementById('archiveModal');
+    const viewModal = document.getElementById('viewArchiveModal');
+    
+    if (event.target === archiveModal) {
+        closeArchiveModal();
+    }
+    if (event.target === viewModal) {
+        closeViewArchiveModal();
+    }
+}
