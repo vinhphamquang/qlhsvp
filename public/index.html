@@ -183,6 +183,25 @@
                 navigator.serviceWorker.register('/service-worker.js')
                     .then((registration) => {
                         console.log('Service Worker đã đăng ký thành công:', registration.scope);
+                        
+                        // Kiểm tra cập nhật mỗi 10 giây
+                        setInterval(() => {
+                            registration.update();
+                        }, 10000);
+                        
+                        // Lắng nghe cập nhật
+                        registration.addEventListener('updatefound', () => {
+                            const newWorker = registration.installing;
+                            
+                            newWorker.addEventListener('statechange', () => {
+                                if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                                    // Có phiên bản mới
+                                    if (confirm('Có phiên bản mới! Bạn có muốn cập nhật không?')) {
+                                        window.location.reload();
+                                    }
+                                }
+                            });
+                        });
                     })
                     .catch((error) => {
                         console.log('Đăng ký Service Worker thất bại:', error);
