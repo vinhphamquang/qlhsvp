@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QR Code - Tải Ứng Dụng</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin: 0;
+            padding: 20px;
+        }
+        .container {
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            text-align: center;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            max-width: 500px;
+        }
+        h1 {
+            color: #667eea;
+            margin-bottom: 10px;
+        }
+        .subtitle {
+            color: #666;
+            margin-bottom: 30px;
+        }
+        #qrcode {
+            margin: 30px auto;
+            padding: 20px;
+            background: white;
+            border-radius: 15px;
+            display: inline-block;
+        }
+        .url-box {
+            background: #f5f5f5;
+            padding: 15px;
+            border-radius: 10px;
+            margin: 20px 0;
+            word-break: break-all;
+            font-family: monospace;
+            font-size: 18px;
+            color: #667eea;
+            font-weight: bold;
+        }
+        .instructions {
+            text-align: left;
+            margin-top: 30px;
+            padding: 20px;
+            background: #f9f9f9;
+            border-radius: 10px;
+        }
+        .instructions h3 {
+            color: #667eea;
+            margin-top: 0;
+        }
+        .instructions ol {
+            padding-left: 20px;
+        }
+        .instructions li {
+            margin: 10px 0;
+            line-height: 1.6;
+        }
+        .btn-back {
+            display: inline-block;
+            margin-top: 20px;
+            padding: 12px 30px;
+            background: #667eea;
+            color: white;
+            text-decoration: none;
+            border-radius: 8px;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+        .btn-back:hover {
+            background: #5568d3;
+            transform: translateY(-2px);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📱 Quét QR Code</h1>
+        <p class="subtitle">Để tải ứng dụng về điện thoại</p>
+        
+        <div id="qrcode"></div>
+        
+        <div class="url-box" id="appUrl">Đang tải...</div>
+        
+        <div class="instructions">
+            <h3>🎯 Hướng dẫn:</h3>
+            <ol>
+                <li><strong>Quét QR Code</strong> bằng camera điện thoại</li>
+                <li>Hoặc nhập địa chỉ trên vào trình duyệt</li>
+                <li>Nhấn nút <strong>"📱 Tải Ứng Dụng"</strong> ở dưới cùng</li>
+                <li>Chọn <strong>"Cài đặt"</strong></li>
+                <li>Mở app từ màn hình chính và sử dụng!</li>
+            </ol>
+            
+            <p><strong>⚠️ Lưu ý:</strong> Điện thoại phải cùng mạng WiFi với máy chủ</p>
+        </div>
+        
+        <a href="/" class="btn-back">← Quay lại ứng dụng</a>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <script>
+        // Lấy địa chỉ IP từ server
+        fetch('/api/server-info')
+            .then(res => res.json())
+            .then(data => {
+                const url = data.url;
+                document.getElementById('appUrl').textContent = url;
+                
+                // Tạo QR Code
+                new QRCode(document.getElementById('qrcode'), {
+                    text: url,
+                    width: 256,
+                    height: 256,
+                    colorDark: '#667eea',
+                    colorLight: '#ffffff',
+                    correctLevel: QRCode.CorrectLevel.H
+                });
+            })
+            .catch(err => {
+                document.getElementById('appUrl').textContent = 'Không thể lấy địa chỉ';
+            });
+    </script>
+</body>
+</html>

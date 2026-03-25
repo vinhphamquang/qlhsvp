@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Phần mềm quản lý học sinh vi phạm cho giáo viên">
+    <meta name="theme-color" content="#667eea">
+    <title>Quản Lý Học Sinh Vi Phạm</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="manifest" href="/manifest.json">
+    <link rel="apple-touch-icon" href="/icon-192.svg">
+</head>
+<body>
+    <div class="container">
+        <h1>📋 Quản Lý Học Sinh Vi Phạm</h1>
+        
+        <!-- Thông tin chia sẻ -->
+        <div class="card" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; text-align: center;">
+            <h2 style="color: white; margin-bottom: 15px;">📱 Chia sẻ với người khác</h2>
+            <p style="margin-bottom: 10px;">Để người khác cài đặt app về điện thoại:</p>
+            <a href="/qr-code.html" style="display: inline-block; background: white; color: #667eea; padding: 12px 30px; border-radius: 8px; text-decoration: none; font-weight: 600; margin-top: 10px;">
+                🔗 Xem QR Code & Hướng dẫn
+            </a>
+            <div style="margin-top: 15px; padding-top: 15px; border-top: 1px solid rgba(255,255,255,0.3);">
+                <small>🔄 Dữ liệu tự động đồng bộ giữa các thiết bị</small>
+            </div>
+        </div>
+
+        <!-- Form nhập vi phạm -->
+        <div class="card">
+            <h2>Thêm Vi Phạm Mới</h2>
+            <form id="violationForm">
+                <div class="form-group">
+                    <label>STT:</label>
+                    <input type="text" id="stt" readonly>
+                </div>
+                
+                <div class="form-group">
+                    <label>Năm học:</label>
+                    <input type="text" id="namHoc" readonly>
+                </div>
+                
+                <div class="form-group">
+                    <label>Họ tên học sinh: <span class="required">*</span></label>
+                    <input type="text" id="hoTen" required placeholder="Nhập họ tên học sinh">
+                </div>
+                
+                <div class="form-group">
+                    <label>Lớp: <span class="required">*</span></label>
+                    <input type="text" id="lop" required placeholder="Ví dụ: 10A1">
+                </div>
+                
+                <div class="form-group">
+                    <label>Nội dung vi phạm: <span class="required">*</span></label>
+                    <div class="violation-select">
+                        <div id="violationList" class="checkbox-list"></div>
+                        <div class="add-violation">
+                            <input type="text" id="newViolation" placeholder="Thêm lỗi vi phạm mới">
+                            <button type="button" id="addViolationBtn">+ Thêm</button>
+                        </div>
+                    </div>
+                </div>
+                
+                <button type="submit" class="btn-primary">Lưu Vi Phạm</button>
+            </form>
+        </div>
+
+        <!-- Danh sách vi phạm -->
+        <div class="card">
+            <div class="header-with-button">
+                <h2>Danh Sách Vi Phạm</h2>
+                <button class="btn-export" onclick="exportToExcel()">📥 Xuất Excel</button>
+            </div>
+            <div class="table-container">
+                <table id="violationTable">
+                    <thead>
+                        <tr>
+                            <th>STT</th>
+                            <th>Năm học</th>
+                            <th>Họ tên</th>
+                            <th>Lớp</th>
+                            <th>Nội dung vi phạm</th>
+                            <th>Thao tác</th>
+                        </tr>
+                    </thead>
+                    <tbody id="violationTableBody">
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Nút tải app cố định -->
+    <button id="installAppBtn" class="install-app-button">
+        <span style="font-size: 24px;">📱</span>
+        <span>Tải Ứng Dụng</span>
+    </button>
+
+    <script src="app.js"></script>
+    <script>
+        // Đăng ký Service Worker
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/service-worker.js')
+                    .then((registration) => {
+                        console.log('Service Worker đã đăng ký thành công:', registration.scope);
+                    })
+                    .catch((error) => {
+                        console.log('Đăng ký Service Worker thất bại:', error);
+                    });
+            });
+        }
+
+        // Xử lý sự kiện cài đặt PWA
+        let deferredPrompt;
+        const installBtn = document.getElementById('installAppBtn');
+
+        // Hiển thị nút ngay lập tức để test (sẽ tự ẩn nếu đã cài đặt)
+        setTimeout(() => {
+            if (!window.matchMedia('(display-mode: standalone)').matches) {
+                installBtn.classList.add('show');
+            }
+        }, 1000);
+
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            
+            // Hiển thị nút tải app
+            installBtn.classList.add('show');
+            console.log('Sự kiện beforeinstallprompt đã kích hoạt');
+        });
+
+        // Xử lý khi nhấn nút tải app
+        installBtn.addEventListener('click', async () => {
+            if (!deferredPrompt) {
+                // Nếu đã cài đặt hoặc không hỗ trợ
+                alert('Hướng dẫn cài đặt:\n\n📱 Android (Chrome/Edge):\n- Nhấn 3 chấm ở góc trên\n- Chọn "Thêm vào màn hình chính"\n\n🍎 iOS (Safari):\n- Nhấn nút Chia sẻ (mũi tên lên)\n- Chọn "Thêm vào Màn hình chính"\n\n💻 Máy tính (Chrome/Edge):\n- Nhấn biểu tượng ⊕ trên thanh địa chỉ\n- Hoặc nhấn 3 chấm → "Cài đặt..."');
+                return;
+            }
+
+            // Hiển thị prompt cài đặt
+            deferredPrompt.prompt();
+            
+            // Đợi người dùng phản hồi
+            const { outcome } = await deferredPrompt.userChoice;
+            
+            if (outcome === 'accepted') {
+                console.log('Người dùng đã cài đặt app');
+                // Ẩn nút sau khi cài đặt
+                installBtn.classList.remove('show');
+            } else {
+                console.log('Người dùng từ chối cài đặt');
+            }
+            
+            deferredPrompt = null;
+        });
+
+        // Ẩn nút nếu đã cài đặt
+        window.addEventListener('appinstalled', () => {
+            console.log('PWA đã được cài đặt');
+            installBtn.classList.remove('show');
+        });
+
+        // Kiểm tra nếu đang chạy như standalone app
+        if (window.matchMedia('(display-mode: standalone)').matches) {
+            console.log('Đang chạy như standalone app');
+            installBtn.style.display = 'none';
+        }
+    </script>
+</body>
+</html>
