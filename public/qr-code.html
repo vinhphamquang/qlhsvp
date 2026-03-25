@@ -5,105 +5,206 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>QR Code - Tải Ứng Dụng</title>
     <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            font-family: 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #ffd966 0%, #fff4cc 100%);
+            background-attachment: fixed;
             min-height: 100vh;
             display: flex;
             justify-content: center;
             align-items: center;
-            margin: 0;
             padding: 20px;
         }
+
         .container {
             background: white;
             border-radius: 20px;
             padding: 40px;
+            max-width: 600px;
+            width: 100%;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.1);
             text-align: center;
-            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
-            max-width: 500px;
         }
-        h1 {
-            color: #667eea;
-            margin-bottom: 10px;
-        }
-        .subtitle {
-            color: #666;
+
+        .header {
             margin-bottom: 30px;
         }
+
+        h1 {
+            color: #2c3e50;
+            font-size: 2em;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .subtitle {
+            color: #7f8c8d;
+            font-size: 1.1em;
+        }
+
+        .qr-section {
+            background: linear-gradient(135deg, #ff6b35 0%, #f7931e 100%);
+            padding: 30px;
+            border-radius: 15px;
+            margin: 30px 0;
+            box-shadow: 0 8px 25px rgba(255, 107, 53, 0.3);
+        }
+
         #qrcode {
-            margin: 30px auto;
-            padding: 20px;
             background: white;
+            padding: 20px;
             border-radius: 15px;
             display: inline-block;
+            margin: 20px auto;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
         }
+
         .url-box {
-            background: #f5f5f5;
-            padding: 15px;
+            background: white;
+            padding: 15px 20px;
             border-radius: 10px;
             margin: 20px 0;
             word-break: break-all;
-            font-family: monospace;
-            font-size: 18px;
-            color: #667eea;
+            font-family: 'Courier New', monospace;
+            font-size: 16px;
+            color: #ff6b35;
             font-weight: bold;
+            border: 2px solid rgba(255,255,255,0.3);
         }
+
         .instructions {
             text-align: left;
+            background: #f8f9fa;
+            padding: 25px;
+            border-radius: 15px;
             margin-top: 30px;
-            padding: 20px;
-            background: #f9f9f9;
-            border-radius: 10px;
+            border-left: 4px solid #3498db;
         }
+
         .instructions h3 {
-            color: #667eea;
-            margin-top: 0;
+            color: #2c3e50;
+            margin-bottom: 15px;
+            font-size: 1.3em;
         }
+
         .instructions ol {
-            padding-left: 20px;
+            padding-left: 25px;
+            color: #2c3e50;
         }
+
         .instructions li {
-            margin: 10px 0;
+            margin: 12px 0;
             line-height: 1.6;
         }
+
+        .instructions strong {
+            color: #ff6b35;
+        }
+
+        .warning {
+            background: #fff3cd;
+            border-left: 4px solid #f39c12;
+            padding: 15px 20px;
+            border-radius: 10px;
+            margin-top: 20px;
+            text-align: left;
+        }
+
+        .warning p {
+            color: #856404;
+            margin: 5px 0;
+        }
+
         .btn-back {
             display: inline-block;
-            margin-top: 20px;
-            padding: 12px 30px;
-            background: #667eea;
+            margin-top: 30px;
+            padding: 14px 35px;
+            background: #3498db;
             color: white;
             text-decoration: none;
-            border-radius: 8px;
+            border-radius: 25px;
             font-weight: 600;
             transition: all 0.3s;
+            box-shadow: 0 4px 15px rgba(52, 152, 219, 0.3);
         }
+
         .btn-back:hover {
-            background: #5568d3;
+            background: #2980b9;
             transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(52, 152, 219, 0.4);
+        }
+
+        .loading {
+            color: #7f8c8d;
+            font-style: italic;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 25px;
+            }
+
+            h1 {
+                font-size: 1.5em;
+            }
+
+            .qr-section {
+                padding: 20px;
+            }
+
+            #qrcode {
+                padding: 15px;
+            }
+
+            .url-box {
+                font-size: 14px;
+            }
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>📱 Quét QR Code</h1>
-        <p class="subtitle">Để tải ứng dụng về điện thoại</p>
+        <div class="header">
+            <h1>
+                <span>📱</span>
+                <span>Quét QR Code</span>
+            </h1>
+            <p class="subtitle">Để tải ứng dụng về điện thoại</p>
+        </div>
         
-        <div id="qrcode"></div>
-        
-        <div class="url-box" id="appUrl">Đang tải...</div>
+        <div class="qr-section">
+            <div id="qrcode"></div>
+            <div class="url-box" id="appUrl">
+                <span class="loading">Đang tải...</span>
+            </div>
+        </div>
         
         <div class="instructions">
-            <h3>🎯 Hướng dẫn:</h3>
+            <h3>🎯 Hướng dẫn sử dụng:</h3>
             <ol>
                 <li><strong>Quét QR Code</strong> bằng camera điện thoại</li>
-                <li>Hoặc nhập địa chỉ trên vào trình duyệt</li>
-                <li>Nhấn nút <strong>"📱 Tải Ứng Dụng"</strong> ở dưới cùng</li>
-                <li>Chọn <strong>"Cài đặt"</strong></li>
+                <li>Hoặc <strong>nhập địa chỉ</strong> ở trên vào trình duyệt</li>
+                <li>Nhấn nút <strong>"📱 Tải Ứng Dụng"</strong> ở góc dưới</li>
+                <li>Chọn <strong>"Cài đặt"</strong> hoặc <strong>"Thêm vào màn hình chính"</strong></li>
                 <li>Mở app từ màn hình chính và sử dụng!</li>
             </ol>
-            
-            <p><strong>⚠️ Lưu ý:</strong> Điện thoại phải cùng mạng WiFi với máy chủ</p>
+        </div>
+
+        <div class="warning">
+            <p><strong>⚠️ Lưu ý:</strong></p>
+            <p>• Cần kết nối internet để truy cập</p>
+            <p>• Dùng Chrome (Android) hoặc Safari (iOS) để cài đặt</p>
+            <p>• Dữ liệu tự động đồng bộ giữa các thiết bị</p>
+            <p>• Có thể sử dụng từ bất kỳ đâu trên thế giới</p>
         </div>
         
         <a href="/" class="btn-back">← Quay lại ứng dụng</a>
@@ -111,26 +212,21 @@
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <script>
-        // Lấy địa chỉ IP từ server
-        fetch('/api/server-info')
-            .then(res => res.json())
-            .then(data => {
-                const url = data.url;
-                document.getElementById('appUrl').textContent = url;
-                
-                // Tạo QR Code
-                new QRCode(document.getElementById('qrcode'), {
-                    text: url,
-                    width: 256,
-                    height: 256,
-                    colorDark: '#667eea',
-                    colorLight: '#ffffff',
-                    correctLevel: QRCode.CorrectLevel.H
-                });
-            })
-            .catch(err => {
-                document.getElementById('appUrl').textContent = 'Không thể lấy địa chỉ';
-            });
+        // URL cố định của ứng dụng đã deploy
+        const appUrl = 'https://qlhsvp.onrender.com/';
+        
+        // Hiển thị URL
+        document.getElementById('appUrl').textContent = appUrl;
+        
+        // Tạo QR Code
+        new QRCode(document.getElementById('qrcode'), {
+            text: appUrl,
+            width: 256,
+            height: 256,
+            colorDark: '#ff6b35',
+            colorLight: '#ffffff',
+            correctLevel: QRCode.CorrectLevel.H
+        });
     </script>
 </body>
 </html>
