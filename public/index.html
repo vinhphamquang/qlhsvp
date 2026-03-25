@@ -12,17 +12,24 @@
 </head>
 <body>
     <div class="container">
-        <h1>📋 Quản Lý Học Sinh Vi Phạm</h1>
+        <!-- Header -->
+        <div class="app-header">
+            <h1>
+                <span>📚</span>
+                <span>Quản Lý Học Sinh Vi Phạm</span>
+            </h1>
+            <p class="subtitle">Hệ thống quản lý kỷ luật học sinh chuyên nghiệp</p>
+        </div>
         
         <!-- Thông tin chia sẻ -->
-        <div class="card" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; text-align: center;">
-            <h2 style="color: white; margin-bottom: 15px;">📱 Chia sẻ với người khác</h2>
-            <p style="margin-bottom: 10px;">Để người khác cài đặt app về điện thoại:</p>
-            <a href="/qr-code.html" style="display: inline-block; background: white; color: #667eea; padding: 12px 30px; border-radius: 8px; text-decoration: none; font-weight: 600; margin-top: 10px;">
+        <div class="share-card">
+            <h2>📱 Chia sẻ với đồng nghiệp</h2>
+            <p>Giáo viên khác có thể cài đặt app về điện thoại để cùng quản lý</p>
+            <a href="/qr-code.html" class="btn-link">
                 🔗 Xem QR Code & Hướng dẫn
             </a>
-            <div style="margin-top: 15px; padding-top: 15px; border-top: 1px solid rgba(255,255,255,0.3);">
-                <small>🔄 Dữ liệu tự động đồng bộ giữa các thiết bị</small>
+            <div class="sync-info">
+                🔄 Dữ liệu tự động đồng bộ giữa tất cả thiết bị
             </div>
         </div>
 
@@ -69,8 +76,8 @@
         <div class="card">
             <div class="header-with-button">
                 <h2>Danh Sách Vi Phạm</h2>
-                <div style="display: flex; gap: 10px;">
-                    <button class="btn-archive" onclick="showArchiveModal()">📁 Lưu trữ năm học</button>
+                <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                    <button class="btn-archive" onclick="showArchiveModal()">🎓 Kết thúc năm học</button>
                     <button class="btn-view-archive" onclick="showViewArchiveModal()">📂 Xem năm cũ</button>
                     <button class="btn-export" onclick="exportToExcel()">📥 Xuất Excel</button>
                 </div>
@@ -104,14 +111,23 @@
     <div id="archiveModal" class="modal">
         <div class="modal-content">
             <span class="close" onclick="closeArchiveModal()">&times;</span>
-            <h2>📁 Lưu trữ năm học</h2>
-            <p>Chọn năm học để lưu trữ và chuyển sang năm mới:</p>
+            <h2>🎓 Kết thúc năm học</h2>
+            <p>Chọn năm học cần kết thúc:</p>
             <select id="yearToArchive" class="year-select"></select>
-            <p style="color: #e74c3c; margin-top: 15px;">
-                ⚠️ Dữ liệu năm này sẽ được lưu vào kho lưu trữ và xóa khỏi danh sách hiện tại.
+            
+            <div id="yearTransitionInfo" style="background: #f0f8ff; padding: 15px; border-radius: 8px; margin-top: 15px; border-left: 4px solid #667eea;">
+                <p style="margin: 5px 0; color: #333;"><strong>📁 Năm cũ:</strong> <span id="oldYear">-</span></p>
+                <p style="margin: 5px 0; color: #333;"><strong>🎓 Năm mới:</strong> <span id="newYear">-</span></p>
+            </div>
+            
+            <p style="color: #27ae60; margin-top: 15px; font-size: 14px;">
+                ✅ Dữ liệu năm cũ sẽ được lưu trữ an toàn<br>
+                ✅ Hệ thống tự động chuyển sang năm mới<br>
+                ✅ Bạn có thể xem lại dữ liệu cũ bất cứ lúc nào
             </p>
+            
             <div style="display: flex; gap: 10px; margin-top: 20px;">
-                <button class="btn-primary" onclick="archiveYear()">Xác nhận lưu trữ</button>
+                <button class="btn-primary" onclick="archiveYear()">Kết thúc năm học</button>
                 <button class="btn-cancel" onclick="closeArchiveModal()">Hủy</button>
             </div>
         </div>
@@ -124,6 +140,38 @@
             <h2>📂 Xem dữ liệu năm cũ</h2>
             <div id="archivedYearsList"></div>
             <div id="archivedDataView"></div>
+        </div>
+    </div>
+
+    <!-- Modal xác nhận xóa năm học -->
+    <div id="deleteConfirmModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeDeleteConfirmModal()">&times;</span>
+            <h2 style="color: #e74c3c;">⚠️ Xác nhận xóa năm học</h2>
+            
+            <div style="background: #fff3cd; padding: 15px; border-radius: 8px; border-left: 4px solid #ffc107; margin: 20px 0;">
+                <p style="margin: 5px 0; color: #856404;"><strong>⚠️ CẢNH BÁO:</strong></p>
+                <p style="margin: 5px 0; color: #856404;">Bạn đang chuẩn bị xóa năm học: <strong id="yearToDelete"></strong></p>
+                <p style="margin: 5px 0; color: #856404;">Hành động này KHÔNG THỂ HOÀN TÁC!</p>
+            </div>
+            
+            <div style="background: #f8d7da; padding: 15px; border-radius: 8px; border-left: 4px solid #dc3545; margin: 20px 0;">
+                <p style="margin: 5px 0; color: #721c24;"><strong>❌ Dữ liệu sẽ bị xóa vĩnh viễn:</strong></p>
+                <ul style="margin: 10px 0; padding-left: 20px; color: #721c24;">
+                    <li>Tất cả vi phạm của năm học này</li>
+                    <li>Không thể khôi phục lại</li>
+                    <li>File lưu trữ sẽ bị xóa hoàn toàn</li>
+                </ul>
+            </div>
+            
+            <p style="margin: 20px 0; font-weight: bold;">Để xác nhận, vui lòng nhập chính xác năm học cần xóa:</p>
+            <input type="text" id="confirmYearInput" class="year-select" placeholder="Ví dụ: 2023-2024" style="font-size: 18px; text-align: center; font-weight: bold;">
+            <input type="hidden" id="deleteYearValue">
+            
+            <div style="display: flex; gap: 10px; margin-top: 20px;">
+                <button class="btn-delete" onclick="deleteArchivedYear()" style="flex: 1;">Xác nhận xóa</button>
+                <button class="btn-cancel" onclick="closeDeleteConfirmModal()" style="flex: 1;">Hủy bỏ</button>
+            </div>
         </div>
     </div>
 

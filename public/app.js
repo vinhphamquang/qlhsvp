@@ -283,11 +283,31 @@ async function showArchiveModal() {
     
     const years = [...new Set(violations.map(v => v.nam_hoc))].sort().reverse();
     
+    if (years.length === 0) {
+        alert('Chưa có dữ liệu để lưu trữ');
+        return;
+    }
+    
     select.innerHTML = years.map(year => 
         `<option value="${year}">${year}</option>`
     ).join('');
     
+    // Cập nhật thông tin chuyển năm
+    updateYearTransitionInfo(years[0]);
+    
+    // Lắng nghe thay đổi năm
+    select.onchange = (e) => updateYearTransitionInfo(e.target.value);
+    
     modal.style.display = 'block';
+}
+
+// Cập nhật thông tin chuyển năm
+function updateYearTransitionInfo(oldYear) {
+    const [startYear, endYear] = oldYear.split('-').map(Number);
+    const newYear = `${startYear + 1}-${endYear + 1}`;
+    
+    document.getElementById('oldYear').textContent = oldYear;
+    document.getElementById('newYear').textContent = newYear;
 }
 
 // Đóng modal lưu trữ
@@ -299,7 +319,11 @@ function closeArchiveModal() {
 async function archiveYear() {
     const year = document.getElementById('yearToArchive').value;
     
-    if (!confirm(`Bạn có chắc muốn lưu trữ năm học ${year}?\n\nDữ liệu sẽ được chuyển vào kho lưu trữ và xóa khỏi danh sách hiện tại.`)) {
+    // Tính năm học mới
+    const [startYear, endYear] = year.split('-').map(Number);
+    const newSchoolYear = `${startYear + 1}-${endYear + 1}`;
+    
+    if (!confirm(`Bạn có chắc muốn kết thúc năm học ${year}?\n\n✅ Dữ liệu năm ${year} sẽ được lưu trữ\n✅ Hệ thống tự động chuyển sang năm ${newSchoolYear}\n✅ Bạn có thể xem lại dữ liệu cũ bất cứ lúc nào`)) {
         return;
     }
     
@@ -313,7 +337,10 @@ async function archiveYear() {
         const result = await response.json();
         
         if (result.success) {
-            alert(`✅ ${result.message}`);
+            // Cập nhật năm học mới
+            document.getElementById('namHoc').value = newSchoolYear;
+            
+            alert(`✅ Đã kết thúc năm học ${year}\n\n🎓 Hệ thống đã chuyển sang năm học ${newSchoolYear}\n📁 Dữ liệu cũ đã được lưu trữ an toàn`);
             closeArchiveModal();
             loadViolations();
         } else {
@@ -367,8 +394,9 @@ async function viewArchivedYear(year) {
         const viewDiv = document.getElementById('archivedDataView');
         viewDiv.innerHTML = `
             <h3 style="margin-top: 30px; color: #667eea;">📊 Dữ liệu năm học ${year}</h3>
-            <div style="margin-bottom: 15px;">
+            <div style="margin-bottom: 15px; display: flex; gap: 10px;">
                 <button class="btn-export" onclick="exportArchivedToExcel('${year}')">📥 Xuất Excel</button>
+                <button class="btn-delete" onclick="confirmDeleteYear('${year}')">🗑️ Xóa năm học</button>
             </div>
             <div class="table-container">
                 <table>
@@ -401,6 +429,52 @@ async function viewArchivedYear(year) {
     }
 }
 
+// Xác nhận xóa năm học (bước 1)
+function confirmDeleteYear(year) {
+    const modal = document.getElementById('deleteConfirmModal');
+    document.getElementById('yearToDelete').textContent = year;
+    document.getElementById('confirmYearInput').value = '';
+    document.getElementById('deleteYearValue').value = year;
+    modal.style.display = 'block';
+}
+
+// Đóng modal xác nhận xóa
+function closeDeleteConfirmModal() {
+    document.getElementById('deleteConfirmModal').style.display = 'none';
+}
+
+// Xóa năm học (bước 2 - sau khi xác nhận)
+async function deleteArchivedYear() {
+    const year = document.getElementById('deleteYearValue').value;
+    const confirmInput = document.getElementById('confirmYearInput').value;
+    
+    // Kiểm tra xác nhận
+    if (confirmInput !== year) {
+        alert('❌ Năm học nhập vào không khớp!\n\nVui lòng nhập chính xác năm học để xác nhận xóa.');
+        return;
+    }
+    
+    try {
+        const response = await fetch(`${API_URL}/archived-year/${year}`, {
+            method: 'DELETE'
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            alert(`✅ ${result.message}`);
+            closeDeleteConfirmModal();
+            closeViewArchiveModal();
+            // Có thể mở lại modal xem năm cũ để cập nhật danh sách
+        } else {
+            alert(`❌ ${result.message}`);
+        }
+    } catch (error) {
+        console.error('Lỗi khi xóa năm học:', error);
+        alert('Có lỗi xảy ra khi xóa năm học');
+    }
+}
+
 // Xuất Excel cho năm đã lưu trữ
 async function exportArchivedToExcel(year) {
     window.location.href = `${API_URL}/export-archived-excel/${year}`;
@@ -410,11 +484,15 @@ async function exportArchivedToExcel(year) {
 window.onclick = function(event) {
     const archiveModal = document.getElementById('archiveModal');
     const viewModal = document.getElementById('viewArchiveModal');
+    const deleteModal = document.getElementById('deleteConfirmModal');
     
     if (event.target === archiveModal) {
         closeArchiveModal();
     }
     if (event.target === viewModal) {
         closeViewArchiveModal();
+    }
+    if (event.target === deleteModal) {
+        closeDeleteConfirmModal();
     }
 }

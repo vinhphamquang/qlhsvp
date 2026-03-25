@@ -145,6 +145,19 @@ app.get('/api/archived-data/:year', (req, res) => {
   }
 });
 
+// API: Xóa năm học đã lưu trữ
+app.delete('/api/archived-year/:year', (req, res) => {
+  const archiveFile = path.join('archives', `${req.params.year}.json`);
+  
+  if (fs.existsSync(archiveFile)) {
+    fs.unlinkSync(archiveFile);
+    updateTimestamp();
+    res.json({ success: true, message: `Đã xóa năm học ${req.params.year}` });
+  } else {
+    res.status(404).json({ success: false, message: 'Không tìm thấy năm học này' });
+  }
+});
+
 // API: Lấy thời gian cập nhật cuối
 app.get('/api/last-update', (req, res) => {
   res.json({ lastUpdate: lastUpdateTimestamp });
