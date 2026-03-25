@@ -19,6 +19,7 @@
                 <span>Quản Lý Học Sinh Vi Phạm</span>
             </h1>
             <p class="subtitle">Hệ thống quản lý kỷ luật học sinh chuyên nghiệp</p>
+            <button class="btn-help" onclick="showHelpModal()">❓ Hướng dẫn sử dụng</button>
         </div>
         
         <!-- Thông tin chia sẻ -->
@@ -171,6 +172,174 @@
             <div style="display: flex; gap: 10px; margin-top: 20px;">
                 <button class="btn-delete" onclick="deleteArchivedYear()" style="flex: 1;">Xác nhận xóa</button>
                 <button class="btn-cancel" onclick="closeDeleteConfirmModal()" style="flex: 1;">Hủy bỏ</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal hướng dẫn sử dụng -->
+    <div id="helpModal" class="modal">
+        <div class="modal-content modal-large">
+            <span class="close" onclick="closeHelpModal()">&times;</span>
+            <h2>📖 Hướng dẫn sử dụng chi tiết</h2>
+            
+            <div class="help-section">
+                <h3>1️⃣ Thêm vi phạm mới</h3>
+                <div class="help-content">
+                    <p><strong>Các bước thực hiện:</strong></p>
+                    <ol>
+                        <li>Nhập <strong>họ tên học sinh</strong> (bắt buộc)</li>
+                        <li>Nhập <strong>lớp</strong> của học sinh (ví dụ: 10A1)</li>
+                        <li><strong>Chọn các vi phạm</strong> từ danh sách (có thể chọn nhiều)</li>
+                        <li>Nhấn nút <strong>"Lưu Vi Phạm"</strong></li>
+                    </ol>
+                    <p><strong>💡 Lưu ý:</strong></p>
+                    <ul>
+                        <li>STT và năm học tự động điền</li>
+                        <li>Phải chọn ít nhất 1 vi phạm</li>
+                        <li>Có thể chọn nhiều vi phạm cùng lúc</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="help-section">
+                <h3>2️⃣ Quản lý loại vi phạm</h3>
+                <div class="help-content">
+                    <p><strong>Thêm loại vi phạm mới:</strong></p>
+                    <ol>
+                        <li>Nhập tên vi phạm vào ô "Thêm lỗi vi phạm mới"</li>
+                        <li>Nhấn nút <strong>"+ Thêm"</strong></li>
+                        <li>Vi phạm mới sẽ xuất hiện trong danh sách</li>
+                    </ol>
+                    <p><strong>Xóa loại vi phạm:</strong></p>
+                    <ul>
+                        <li>Nhấn nút <strong>"Xóa"</strong> bên cạnh vi phạm cần xóa</li>
+                        <li>Vi phạm sẽ bị xóa khỏi danh sách</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="help-section">
+                <h3>3️⃣ Xuất báo cáo Excel</h3>
+                <div class="help-content">
+                    <p><strong>Xuất dữ liệu hiện tại:</strong></p>
+                    <ol>
+                        <li>Nhấn nút <strong>"📥 Xuất Excel"</strong></li>
+                        <li>File Excel sẽ tự động tải xuống</li>
+                        <li>Mở file để xem báo cáo đầy đủ</li>
+                    </ol>
+                    <p><strong>Xuất dữ liệu năm cũ:</strong></p>
+                    <ol>
+                        <li>Nhấn <strong>"📂 Xem năm cũ"</strong></li>
+                        <li>Chọn năm muốn xuất</li>
+                        <li>Nhấn <strong>"📥 Xuất Excel"</strong> trong trang chi tiết</li>
+                    </ol>
+                </div>
+            </div>
+
+            <div class="help-section">
+                <h3>4️⃣ Kết thúc năm học</h3>
+                <div class="help-content">
+                    <p><strong>Khi nào cần làm:</strong></p>
+                    <ul>
+                        <li>Cuối năm học (tháng 5-6)</li>
+                        <li>Khi muốn chuyển sang năm học mới</li>
+                    </ul>
+                    <p><strong>Các bước thực hiện:</strong></p>
+                    <ol>
+                        <li>Nhấn nút <strong>"🎓 Kết thúc năm học"</strong></li>
+                        <li>Chọn năm học cần kết thúc</li>
+                        <li>Xem năm mới tự động hiển thị</li>
+                        <li>Nhấn <strong>"Kết thúc năm học"</strong> để xác nhận</li>
+                    </ol>
+                    <p><strong>💡 Điều gì xảy ra:</strong></p>
+                    <ul>
+                        <li>Dữ liệu năm cũ được lưu trữ an toàn</li>
+                        <li>Hệ thống tự động chuyển sang năm mới</li>
+                        <li>Danh sách hiện tại được làm sạch</li>
+                        <li>Vẫn có thể xem lại dữ liệu năm cũ</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="help-section">
+                <h3>5️⃣ Xem dữ liệu năm cũ</h3>
+                <div class="help-content">
+                    <p><strong>Các bước thực hiện:</strong></p>
+                    <ol>
+                        <li>Nhấn nút <strong>"📂 Xem năm cũ"</strong></li>
+                        <li>Chọn năm học muốn xem</li>
+                        <li>Xem danh sách vi phạm của năm đó</li>
+                        <li>Có thể xuất Excel riêng cho năm đó</li>
+                    </ol>
+                    <p><strong>Xóa năm học cũ:</strong></p>
+                    <ol>
+                        <li>Trong trang xem chi tiết, nhấn <strong>"🗑️ Xóa năm học"</strong></li>
+                        <li>Nhập chính xác năm học để xác nhận</li>
+                        <li>Nhấn <strong>"Xác nhận xóa"</strong></li>
+                    </ol>
+                    <p><strong>⚠️ Cảnh báo:</strong> Xóa năm học không thể hoàn tác!</p>
+                </div>
+            </div>
+
+            <div class="help-section">
+                <h3>6️⃣ Chia sẻ với đồng nghiệp</h3>
+                <div class="help-content">
+                    <p><strong>Cách chia sẻ:</strong></p>
+                    <ol>
+                        <li>Nhấn <strong>"🔗 Xem QR Code & Hướng dẫn"</strong></li>
+                        <li>Cho đồng nghiệp quét QR Code</li>
+                        <li>Hoặc gửi link: <strong>https://qlhsvp.onrender.com/</strong></li>
+                        <li>Họ có thể cài đặt app về điện thoại</li>
+                    </ol>
+                    <p><strong>💡 Lợi ích:</strong></p>
+                    <ul>
+                        <li>Nhiều giáo viên cùng sử dụng</li>
+                        <li>Dữ liệu tự động đồng bộ</li>
+                        <li>Truy cập từ mọi nơi</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="help-section">
+                <h3>7️⃣ Cài đặt như App</h3>
+                <div class="help-content">
+                    <p><strong>Trên máy tính (Chrome/Edge):</strong></p>
+                    <ol>
+                        <li>Nhấn biểu tượng <strong>⊕</strong> trên thanh địa chỉ</li>
+                        <li>Hoặc nhấn nút <strong>"📱 Tải Ứng Dụng"</strong> ở góc dưới</li>
+                        <li>Chọn <strong>"Cài đặt"</strong></li>
+                        <li>App sẽ mở như cửa sổ riêng</li>
+                    </ol>
+                    <p><strong>Trên Android:</strong></p>
+                    <ol>
+                        <li>Nhấn menu <strong>⋮</strong> (3 chấm)</li>
+                        <li>Chọn <strong>"Thêm vào màn hình chính"</strong></li>
+                        <li>Nhấn <strong>"Thêm"</strong></li>
+                    </ol>
+                    <p><strong>Trên iOS (Safari):</strong></p>
+                    <ol>
+                        <li>Nhấn nút <strong>Chia sẻ</strong> (mũi tên lên)</li>
+                        <li>Chọn <strong>"Thêm vào Màn hình chính"</strong></li>
+                        <li>Nhấn <strong>"Thêm"</strong></li>
+                    </ol>
+                </div>
+            </div>
+
+            <div class="help-section" style="background: #e8f5e9; border-left: 4px solid #27ae60;">
+                <h3>💡 Mẹo sử dụng</h3>
+                <div class="help-content">
+                    <ul>
+                        <li><strong>Backup định kỳ:</strong> Xuất Excel mỗi tháng để lưu trữ</li>
+                        <li><strong>Đồng bộ tự động:</strong> Dữ liệu cập nhật mỗi 3 giây</li>
+                        <li><strong>Hoạt động offline:</strong> Sau khi tải lần đầu</li>
+                        <li><strong>Xóa cache:</strong> Ctrl+F5 nếu không thấy cập nhật</li>
+                        <li><strong>In QR Code:</strong> Dán ở phòng giáo viên để dễ chia sẻ</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div style="text-align: center; margin-top: 30px;">
+                <button class="btn-primary" onclick="closeHelpModal()" style="max-width: 300px;">Đã hiểu</button>
             </div>
         </div>
     </div>

@@ -630,3 +630,82 @@ tbody tr:last-child td {
         display: none !important;
     }
 }
+
+/* Help Button */
+.btn-help {
+    background: #3498db;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 20px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 600;
+    margin-top: 15px;
+    transition: all 0.3s;
+}
+
+.btn-help:hover {
+    background: #2980b9;
+    transform: translateY(-2px);
+}
+
+/* Help Modal Styles */
+.help-section {
+    background: #f8f9fa;
+    padding: 20px;
+    border-radius: 12px;
+    margin-bottom: 20px;
+    border-left: 4px solid #3498db;
+}
+
+.help-section h3 {
+    color: #2c3e50;
+    margin-bottom: 15px;
+    font-size: 1.3em;
+}
+
+.help-content {
+    color: #2c3e50;
+}
+
+.help-content p {
+    margin: 10px 0;
+}
+
+.help-content strong {
+    color: #ff6b35;
+}
+
+.help-content ol, .help-content ul {
+    margin: 10px 0;
+    padding-left: 25px;
+}
+
+.help-content li {
+    margin: 8px 0;
+    line-height: 1.6;
+}
+
+.modal-large {
+    max-height: 90vh;
+    overflow-y: auto;
+}
+
+.modal-large::-webkit-scrollbar {
+    width: 10px;
+}
+
+.modal-large::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 10px;
+}
+
+.modal-large::-webkit-scrollbar-thumb {
+    background: #bdc3c7;
+    border-radius: 10px;
+}
+
+.modal-large::-webkit-scrollbar-thumb:hover {
+    background: #95a5a6;
+}

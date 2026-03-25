@@ -485,6 +485,7 @@ window.onclick = function(event) {
     const archiveModal = document.getElementById('archiveModal');
     const viewModal = document.getElementById('viewArchiveModal');
     const deleteModal = document.getElementById('deleteConfirmModal');
+    const helpModal = document.getElementById('helpModal');
     
     if (event.target === archiveModal) {
         closeArchiveModal();
@@ -495,4 +496,17 @@ window.onclick = function(event) {
     if (event.target === deleteModal) {
         closeDeleteConfirmModal();
     }
+    if (event.target === helpModal) {
+        closeHelpModal();
+    }
+}
+
+// Hiển thị modal hướng dẫn
+function showHelpModal() {
+    document.getElementById('helpModal').style.display = 'block';
+}
+
+// Đóng modal hướng dẫn
+function closeHelpModal() {
+    document.getElementById('helpModal').style.display = 'none';
 }
