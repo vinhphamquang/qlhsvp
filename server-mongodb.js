@@ -129,7 +129,7 @@ app.delete('/api/violation-types/:id', async (req, res) => {
 // API: Lấy danh sách vi phạm
 app.get('/api/violations', async (req, res) => {
   try {
-    const violations = await Violation.find().sort({ _id: -1 });
+    const violations = await Violation.find().sort({ _id: 1 }); // Sắp xếp cũ nhất trước
     res.json(violations);
   } catch (error) {
     res.status(500).json({ error: error.message });
