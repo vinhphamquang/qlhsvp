@@ -140,13 +140,14 @@ async function loadViolations() {
         
         violations.forEach((v, index) => {
             const tr = document.createElement('tr');
+            const violationId = v._id || v.id; // Hỗ trợ cả MongoDB (_id) và JSON (id)
             tr.innerHTML = `
-                <td>${violations.length - index}</td>
+                <td>${index + 1}</td>
                 <td>${v.nam_hoc}</td>
                 <td>${v.ho_ten}</td>
                 <td>${v.lop}</td>
                 <td>${v.noi_dung_vi_pham}</td>
-                <td><button class="btn-delete" onclick="deleteViolation(${v.id})">Xóa</button></td>
+                <td><button class="btn-delete" onclick="deleteViolation('${violationId}')">Xóa</button></td>
             `;
             tbody.appendChild(tr);
         });
