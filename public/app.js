@@ -446,11 +446,11 @@ function closeDeleteConfirmModal() {
 // Xóa năm học (bước 2 - sau khi xác nhận)
 async function deleteArchivedYear() {
     const year = document.getElementById('deleteYearValue').value;
-    const confirmInput = document.getElementById('confirmYearInput').value;
+    const confirmInput = document.getElementById('confirmYearInput').value.trim().toLowerCase();
     
     // Kiểm tra xác nhận
-    if (confirmInput !== year) {
-        alert('❌ Năm học nhập vào không khớp!\n\nVui lòng nhập chính xác năm học để xác nhận xóa.');
+    if (confirmInput !== 'xóa') {
+        alert('❌ Xác nhận không đúng!\n\nVui lòng nhập chữ "xóa" để xác nhận.');
         return;
     }
     

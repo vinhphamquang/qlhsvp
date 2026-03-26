@@ -1,3 +1,4 @@
+# Git ignore config
 node_modules/
 *.log
 .DS_Store
@@ -5,3 +6,5 @@ data.json
 violations.db
 QuanLyHocSinhViPham.zip
 .env
+.env.local
+.env.production

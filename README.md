@@ -2,6 +2,10 @@
 
 Hệ thống quản lý kỷ luật học sinh chuyên nghiệp dành cho giáo viên.
 
+## 🎯 Hai phiên bản lưu trữ:
+- **File JSON** (server.js) - Đơn giản, chạy ngay, lưu trên máy
+- **MongoDB Atlas** (server-mongodb.js) - Lưu đám mây, truy cập mọi nơi
+
 ## ✨ Tính năng
 
 - ✅ Ghi nhận vi phạm học sinh (tự động điền STT và năm học)
@@ -23,13 +27,33 @@ Tải và cài đặt từ: https://nodejs.org
 npm install
 ```
 
-### 3. Chạy ứng dụng
+### 3. Chọn phiên bản và chạy
+
+#### Phiên bản File JSON (Khuyến nghị cho người mới):
 ```cmd
 npm start
 ```
 
+#### Phiên bản MongoDB Atlas (Lưu trữ đám mây):
+```cmd
+npm run test:mongodb
+npm run start:mongodb
+```
+
 ### 4. Truy cập
 Mở trình duyệt: http://localhost:3000
+
+## 🔄 Chuyển sang MongoDB Atlas
+
+Nếu bạn muốn lưu dữ liệu trên đám mây (truy cập từ mọi nơi):
+
+1. **Đọc hướng dẫn**: `SETUP_MONGODB_NHANH.md` (5 phút)
+2. **Tạo MongoDB Atlas** cluster miễn phí
+3. **Cập nhật** file `.env` với connection string
+4. **Test kết nối**: `npm run test:mongodb`
+5. **Chạy server**: `npm run start:mongodb`
+
+Xem chi tiết trong `docs/HUONG_DAN_MONGODB.md`
 
 ## 📱 Cài đặt như App
 
@@ -63,11 +87,18 @@ quan-ly-hoc-sinh-vi-pham/
 │   ├── service-worker.js # PWA offline
 │   ├── manifest.json   # PWA config
 │   └── icon-*.svg      # Icons
-├── archives/           # Lưu trữ năm học cũ
+├── models/             # MongoDB Schemas
+│   ├── Violation.js    # Schema vi phạm
+│   ├── ViolationType.js # Schema loại vi phạm
+│   └── ArchivedYear.js # Schema năm lưu trữ
+├── archives/           # Lưu trữ năm học cũ (JSON)
 ├── docs/              # Tài liệu hướng dẫn
-├── server.js          # Backend API
+├── server.js          # Backend với File JSON
+├── server-mongodb.js  # Backend với MongoDB
+├── test-mongodb.js    # Test kết nối MongoDB
+├── .env               # Cấu hình MongoDB
 ├── package.json       # Dependencies
-├── data.json          # Database (tự tạo)
+├── data.json          # Database JSON (tự tạo)
 └── README.md          # File này
 ```
 
@@ -95,16 +126,25 @@ quan-ly-hoc-sinh-vi-pham/
 
 - **Backend**: Node.js + Express
 - **Frontend**: HTML + CSS + JavaScript
-- **Database**: JSON file (đơn giản, dễ backup)
+- **Database**: 
+  - File JSON (mặc định - đơn giản)
+  - MongoDB Atlas (tùy chọn - đám mây)
 - **PWA**: Service Worker + Manifest
 - **Export**: ExcelJS
 
 ## 📝 Lưu ý
 
+### Phiên bản File JSON:
 - Dữ liệu lưu trong file `data.json`
 - Năm cũ lưu trong thư mục `archives/`
 - Nên backup định kỳ
 - Server phải chạy để app hoạt động
+
+### Phiên bản MongoDB:
+- Dữ liệu lưu trên MongoDB Atlas
+- Truy cập từ mọi nơi
+- Tự động backup
+- Cần internet để hoạt động
 
 ## 🆘 Xử lý sự cố
 
