@@ -3,6 +3,8 @@ node_modules/
 *.log
 .DS_Store
 data.json
+users.json
+activity-logs.json
 violations.db
 QuanLyHocSinhViPham.zip
 .env

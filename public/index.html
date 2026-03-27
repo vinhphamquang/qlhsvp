@@ -11,7 +11,37 @@
     <link rel="apple-touch-icon" href="/icon-192.svg">
 </head>
 <body>
-    <div class="container">
+    <!-- Modal đăng nhập -->
+    <div id="loginModal" class="modal" style="display: none;">
+        <div class="modal-content" style="max-width: 450px;">
+            <h2 style="color: #667eea; text-align: center; margin-bottom: 10px;">🔐 Đăng nhập</h2>
+            <p style="text-align: center; color: #666; margin-bottom: 30px;">Vui lòng nhập thông tin để sử dụng hệ thống</p>
+            
+            <form id="loginForm">
+                <div class="form-group">
+                    <label>Họ và tên: <span class="required">*</span></label>
+                    <input type="text" id="userName" required placeholder="Ví dụ: Nguyễn Văn A">
+                </div>
+                
+                <div class="form-group">
+                    <label>Email: <span class="required">*</span></label>
+                    <input type="email" id="userEmail" required placeholder="" 
+                           pattern="[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}"
+                           title="Vui lòng nhập email đúng định dạng (ví dụ: giaovien@gmail.com)">
+                </div>
+                
+                <button type="submit" class="btn-primary" style="width: 100%; padding: 15px; font-size: 16px;">
+                    ✅ Đăng nhập
+                </button>
+            </form>
+            
+            <p style="text-align: center; color: #999; font-size: 13px; margin-top: 20px;">
+                Thông tin của bạn chỉ được lưu trên thiết bị này
+            </p>
+        </div>
+    </div>
+
+    <div class="container" id="mainContent" style="display: none;">
         <!-- Header -->
         <div class="app-header">
             <h1>
@@ -19,7 +49,11 @@
                 <span>Quản Lý Học Sinh Vi Phạm</span>
             </h1>
             <p class="subtitle">Hệ thống quản lý kỷ luật học sinh chuyên nghiệp</p>
-            <button class="btn-help" onclick="showHelpModal()">❓ Hướng dẫn sử dụng</button>
+            <div style="display: flex; gap: 10px; justify-content: center; align-items: center; flex-wrap: wrap;">
+                <button class="btn-help" onclick="showHelpModal()">❓ Hướng dẫn sử dụng</button>
+                <button class="btn-help" onclick="showUserInfo()" style="background: #667eea;">👤 <span id="displayUserName"></span></button>
+                <button class="btn-help" onclick="logout()" style="background: #e74c3c;">🚪 Đăng xuất</button>
+            </div>
         </div>
         
         <!-- Thông tin chia sẻ -->
@@ -81,8 +115,36 @@
                     <button class="btn-archive" onclick="showArchiveModal()">🎓 Kết thúc năm học</button>
                     <button class="btn-view-archive" onclick="showViewArchiveModal()">📂 Xem năm cũ</button>
                     <button class="btn-export" onclick="exportToExcel()">📥 Xuất Excel</button>
+                    <button class="btn-help" onclick="showActivityLogModal()" style="background: #3498db;">📜 Lịch sử</button>
                 </div>
             </div>
+            
+            <!-- Bộ lọc -->
+            <div style="background: #f8f9fa; padding: 15px; border-radius: 10px; margin-bottom: 20px; display: flex; gap: 15px; flex-wrap: wrap; align-items: center;">
+                <div style="flex: 1; min-width: 200px;">
+                    <label style="display: block; margin-bottom: 5px; font-weight: 500; color: #2c3e50;">🔍 Lọc theo khối:</label>
+                    <select id="filterKhoi" onchange="filterViolations()" style="width: 100%; padding: 10px; border: 2px solid #ddd; border-radius: 8px; font-size: 14px;">
+                        <option value="">Tất cả khối</option>
+                        <option value="6">Khối 6</option>
+                        <option value="7">Khối 7</option>
+                        <option value="8">Khối 8</option>
+                        <option value="9">Khối 9</option>
+                    </select>
+                </div>
+                
+                <div style="flex: 1; min-width: 200px;">
+                    <label style="display: block; margin-bottom: 5px; font-weight: 500; color: #2c3e50;">📚 Lọc theo lớp:</label>
+                    <input type="text" id="filterLop" onkeyup="filterViolations()" placeholder="Ví dụ: 6A, 7B..." style="width: 100%; padding: 10px; border: 2px solid #ddd; border-radius: 8px; font-size: 14px;">
+                </div>
+                
+                <div style="flex: 1; min-width: 200px;">
+                    <label style="display: block; margin-bottom: 5px; font-weight: 500; color: #2c3e50;">👤 Tìm học sinh:</label>
+                    <input type="text" id="filterName" onkeyup="filterViolations()" placeholder="Nhập tên học sinh..." style="width: 100%; padding: 10px; border: 2px solid #ddd; border-radius: 8px; font-size: 14px;">
+                </div>
+                
+                <button onclick="resetFilter()" style="background: #95a5a6; color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: 500; margin-top: 25px;">🔄 Xóa lọc</button>
+            </div>
+            
             <div class="table-container">
                 <table id="violationTable">
                     <thead>
@@ -104,8 +166,7 @@
 
     <!-- Nút tải app cố định -->
     <button id="installAppBtn" class="install-app-button">
-        <span style="font-size: 24px;">📱</span>
-        <span>Tải Ứng Dụng</span>
+        📱
     </button>
 
     <!-- Modal lưu trữ năm học -->
@@ -144,6 +205,38 @@
         </div>
     </div>
 
+    <!-- Modal chỉnh sửa vi phạm -->
+    <div id="editViolationModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeEditViolationModal()">&times;</span>
+            <h2>✏️ Chỉnh sửa vi phạm</h2>
+            
+            <form id="editViolationForm">
+                <input type="hidden" id="editViolationId">
+                
+                <div class="form-group">
+                    <label>Họ tên: <span class="required">*</span></label>
+                    <input type="text" id="editHoTen" required>
+                </div>
+                
+                <div class="form-group">
+                    <label>Lớp: <span class="required">*</span></label>
+                    <input type="text" id="editLop" required>
+                </div>
+                
+                <div class="form-group">
+                    <label>Nội dung vi phạm: <span class="required">*</span></label>
+                    <textarea id="editNoiDung" required rows="3" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 8px; font-family: inherit;"></textarea>
+                </div>
+                
+                <div style="display: flex; gap: 10px; margin-top: 20px;">
+                    <button type="submit" class="btn-primary" style="flex: 1;">💾 Lưu thay đổi</button>
+                    <button type="button" class="btn-cancel" onclick="closeEditViolationModal()" style="flex: 1;">Hủy</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <!-- Modal xác nhận xóa năm học -->
     <div id="deleteConfirmModal" class="modal">
         <div class="modal-content">
@@ -172,6 +265,40 @@
             <div style="display: flex; gap: 10px; margin-top: 20px;">
                 <button class="btn-delete" onclick="deleteArchivedYear()" style="flex: 1;">Xác nhận xóa</button>
                 <button class="btn-cancel" onclick="closeDeleteConfirmModal()" style="flex: 1;">Hủy bỏ</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal lịch sử hoạt động -->
+    <div id="activityLogModal" class="modal">
+        <div class="modal-content modal-large">
+            <span class="close" onclick="closeActivityLogModal()">&times;</span>
+            <h2>📜 Lịch sử hoạt động</h2>
+            <p style="color: #666; margin-bottom: 20px;">Theo dõi tất cả thao tác của giáo viên trong hệ thống</p>
+            
+            <div style="overflow-x: auto;">
+                <table class="violation-table">
+                    <thead>
+                        <tr>
+                            <th style="width: 50px;">STT</th>
+                            <th style="width: 150px;">Thời gian</th>
+                            <th style="width: 150px;">Giáo viên</th>
+                            <th style="width: 120px;">Hành động</th>
+                            <th>Chi tiết</th>
+                        </tr>
+                    </thead>
+                    <tbody id="activityLogTableBody">
+                        <tr>
+                            <td colspan="5" style="text-align: center; padding: 30px;">
+                                Đang tải lịch sử...
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            
+            <div style="margin-top: 20px; text-align: center;">
+                <button class="btn-cancel" onclick="closeActivityLogModal()">Đóng</button>
             </div>
         </div>
     </div>

@@ -13,6 +13,8 @@ app.use(express.static('public'));
 
 // File lưu trữ dữ liệu
 const DATA_FILE = 'data.json';
+const USERS_FILE = 'users.json';
+const ACTIVITY_LOG_FILE = 'activity-logs.json';
 
 // Biến lưu thời gian cập nhật cuối
 let lastUpdateTimestamp = Date.now();
@@ -20,6 +22,66 @@ let lastUpdateTimestamp = Date.now();
 // Hàm cập nhật timestamp
 function updateTimestamp() {
   lastUpdateTimestamp = Date.now();
+}
+
+// Khởi tạo file users
+function initUsers() {
+  if (!fs.existsSync(USERS_FILE)) {
+    fs.writeFileSync(USERS_FILE, JSON.stringify({ users: [] }, null, 2));
+  }
+}
+
+// Đọc users
+function readUsers() {
+  if (!fs.existsSync(USERS_FILE)) {
+    initUsers();
+  }
+  const data = fs.readFileSync(USERS_FILE, 'utf8');
+  return JSON.parse(data);
+}
+
+// Lưu users
+function saveUsers(data) {
+  fs.writeFileSync(USERS_FILE, JSON.stringify(data, null, 2));
+}
+
+// Khởi tạo file activity logs
+function initActivityLogs() {
+  if (!fs.existsSync(ACTIVITY_LOG_FILE)) {
+    fs.writeFileSync(ACTIVITY_LOG_FILE, JSON.stringify({ logs: [] }, null, 2));
+  }
+}
+
+// Đọc activity logs
+function readActivityLogs() {
+  if (!fs.existsSync(ACTIVITY_LOG_FILE)) {
+    initActivityLogs();
+  }
+  const data = fs.readFileSync(ACTIVITY_LOG_FILE, 'utf8');
+  return JSON.parse(data);
+}
+
+// Lưu activity logs
+function saveActivityLogs(data) {
+  fs.writeFileSync(ACTIVITY_LOG_FILE, JSON.stringify(data, null, 2));
+}
+
+// Ghi log hoạt động
+function logActivity(user_email, user_name, action, details) {
+  try {
+    const logsData = readActivityLogs();
+    logsData.logs.push({
+      id: logsData.logs.length + 1,
+      user_email,
+      user_name,
+      action,
+      details,
+      timestamp: new Date().toISOString()
+    });
+    saveActivityLogs(logsData);
+  } catch (error) {
+    console.error('Lỗi ghi log:', error);
+  }
 }
 
 // Khởi tạo dữ liệu mặc định
@@ -115,6 +177,8 @@ function getArchivedData(schoolYear) {
 }
 
 initData();
+initUsers();
+initActivityLogs();
 
 // API: Lưu trữ năm học (kết thúc năm)
 app.post('/api/archive-year', (req, res) => {
@@ -163,6 +227,78 @@ app.get('/api/last-update', (req, res) => {
   res.json({ lastUpdate: lastUpdateTimestamp });
 });
 
+// API: Đăng nhập/Đăng ký user
+app.post('/api/login', (req, res) => {
+  try {
+    const { ho_ten, email } = req.body;
+    
+    if (!ho_ten || !email) {
+      return res.status(400).json({ error: 'Thiếu thông tin họ tên hoặc email' });
+    }
+    
+    const usersData = readUsers();
+    let user = usersData.users.find(u => u.email === email);
+    
+    if (user) {
+      // User đã tồn tại - cập nhật thông tin
+      user.ho_ten = ho_ten;
+      user.last_login = new Date().toISOString();
+      user.login_count = (user.login_count || 0) + 1;
+    } else {
+      // User mới - tạo mới
+      user = {
+        id: usersData.users.length + 1,
+        ho_ten,
+        email,
+        last_login: new Date().toISOString(),
+        login_count: 1,
+        created_at: new Date().toISOString()
+      };
+      usersData.users.push(user);
+    }
+    
+    saveUsers(usersData);
+    
+    // Ghi log đăng nhập
+    logActivity(email, ho_ten, 'Đăng nhập', `${ho_ten} đã đăng nhập vào hệ thống`);
+    
+    res.json({
+      success: true,
+      user: {
+        id: user.id,
+        ho_ten: user.ho_ten,
+        email: user.email,
+        login_count: user.login_count
+      }
+    });
+  } catch (error) {
+    console.error('Lỗi đăng nhập:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// API: Lấy danh sách users
+app.get('/api/users', (req, res) => {
+  try {
+    const usersData = readUsers();
+    res.json(usersData.users);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// API: Lấy lịch sử hoạt động
+app.get('/api/activity-logs', (req, res) => {
+  try {
+    const limit = parseInt(req.query.limit) || 50;
+    const logsData = readActivityLogs();
+    const logs = logsData.logs.slice(-limit).reverse(); // Lấy N log mới nhất
+    res.json(logs);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // API: Lấy thông tin server (IP và URL)
 app.get('/api/server-info', (req, res) => {
   const networkInterfaces = os.networkInterfaces();
@@ -194,7 +330,7 @@ app.get('/api/violation-types', (req, res) => {
 
 // API: Thêm loại vi phạm mới
 app.post('/api/violation-types', (req, res) => {
-  const { ten_vi_pham } = req.body;
+  const { ten_vi_pham, user_email, user_name } = req.body;
   const data = readData();
   
   // Kiểm tra trùng lặp
@@ -210,16 +346,30 @@ app.post('/api/violation-types', (req, res) => {
   
   data.violationTypes.push(newType);
   writeData(data);
-  updateTimestamp(); // Cập nhật timestamp
+  
+  // Ghi log
+  if (user_email && user_name) {
+    logActivity(user_email, user_name, 'Thêm loại vi phạm', `Thêm loại vi phạm mới: ${ten_vi_pham}`);
+  }
+  
+  updateTimestamp();
   res.json(newType);
 });
 
 // API: Xóa loại vi phạm
 app.delete('/api/violation-types/:id', (req, res) => {
+  const { user_email, user_name } = req.query;
   const data = readData();
+  const type = data.violationTypes.find(v => v.id === parseInt(req.params.id));
+  
+  // Ghi log trước khi xóa
+  if (type && user_email && user_name) {
+    logActivity(user_email, user_name, 'Xóa loại vi phạm', `Xóa loại vi phạm: ${type.ten_vi_pham}`);
+  }
+  
   data.violationTypes = data.violationTypes.filter(v => v.id !== parseInt(req.params.id));
   writeData(data);
-  updateTimestamp(); // Cập nhật timestamp
+  updateTimestamp();
   res.json({ success: true });
 });
 
@@ -231,7 +381,7 @@ app.get('/api/violations', (req, res) => {
 
 // API: Thêm vi phạm mới
 app.post('/api/violations', (req, res) => {
-  const { nam_hoc, ho_ten, lop, noi_dung_vi_pham } = req.body;
+  const { nam_hoc, ho_ten, lop, noi_dung_vi_pham, user_email, user_name } = req.body;
   const data = readData();
   
   const newViolation = {
@@ -245,17 +395,61 @@ app.post('/api/violations', (req, res) => {
   
   data.violations.push(newViolation);
   writeData(data);
-  updateTimestamp(); // Cập nhật timestamp
+  
+  // Ghi log
+  if (user_email && user_name) {
+    logActivity(user_email, user_name, 'Thêm vi phạm', `Thêm vi phạm: ${ho_ten} (${lop}) - ${noi_dung_vi_pham}`);
+  }
+  
+  updateTimestamp();
   res.json(newViolation);
 });
 
 // API: Xóa vi phạm
 app.delete('/api/violations/:id', (req, res) => {
+  const { user_email, user_name } = req.query;
   const data = readData();
+  const violation = data.violations.find(v => v.id === parseInt(req.params.id));
+  
+  // Ghi log trước khi xóa
+  if (violation && user_email && user_name) {
+    logActivity(user_email, user_name, 'Xóa vi phạm', `Xóa vi phạm: ${violation.ho_ten} (${violation.lop})`);
+  }
+  
   data.violations = data.violations.filter(v => v.id !== parseInt(req.params.id));
   writeData(data);
-  updateTimestamp(); // Cập nhật timestamp
+  updateTimestamp();
   res.json({ success: true });
+});
+
+// API: Cập nhật vi phạm
+app.put('/api/violations/:id', (req, res) => {
+  const { ho_ten, lop, noi_dung_vi_pham, user_email, user_name } = req.body;
+  const data = readData();
+  const violation = data.violations.find(v => v.id === parseInt(req.params.id));
+  
+  if (!violation) {
+    return res.status(404).json({ error: 'Không tìm thấy vi phạm' });
+  }
+  
+  // Lưu thông tin cũ để ghi log
+  const oldInfo = `${violation.ho_ten} (${violation.lop}) - ${violation.noi_dung_vi_pham}`;
+  const newInfo = `${ho_ten} (${lop}) - ${noi_dung_vi_pham}`;
+  
+  // Cập nhật
+  violation.ho_ten = ho_ten;
+  violation.lop = lop;
+  violation.noi_dung_vi_pham = noi_dung_vi_pham;
+  
+  writeData(data);
+  
+  // Ghi log
+  if (user_email && user_name) {
+    logActivity(user_email, user_name, 'Sửa vi phạm', `Sửa vi phạm: ${oldInfo} → ${newInfo}`);
+  }
+  
+  updateTimestamp();
+  res.json(violation);
 });
 
 // API: Xuất file Excel

@@ -9,6 +9,8 @@ const os = require('os');
 const Violation = require('./models/Violation');
 const ViolationType = require('./models/ViolationType');
 const ArchivedYear = require('./models/ArchivedYear');
+const User = require('./models/User');
+const ActivityLog = require('./models/ActivityLog');
 
 const app = express();
 
@@ -67,6 +69,82 @@ app.get('/api/last-update', (req, res) => {
   res.json({ lastUpdate: lastUpdateTimestamp });
 });
 
+// API: Đăng nhập/Đăng ký user
+app.post('/api/login', async (req, res) => {
+  try {
+    const { ho_ten, email } = req.body;
+    
+    if (!ho_ten || !email) {
+      return res.status(400).json({ error: 'Thiếu thông tin họ tên hoặc email' });
+    }
+    
+    // Tìm user theo email
+    let user = await User.findOne({ email });
+    
+    if (user) {
+      // User đã tồn tại - cập nhật thông tin đăng nhập
+      user.ho_ten = ho_ten;
+      user.last_login = new Date();
+      user.login_count += 1;
+      await user.save();
+    } else {
+      // User mới - tạo mới
+      user = await User.create({
+        ho_ten,
+        email,
+        last_login: new Date(),
+        login_count: 1
+      });
+    }
+    
+    // Ghi log đăng nhập
+    await ActivityLog.create({
+      user_email: email,
+      user_name: ho_ten,
+      action: 'Đăng nhập',
+      details: `${ho_ten} đã đăng nhập vào hệ thống`
+    });
+    
+    res.json({
+      success: true,
+      user: {
+        id: user._id,
+        ho_ten: user.ho_ten,
+        email: user.email,
+        login_count: user.login_count
+      }
+    });
+  } catch (error) {
+    console.error('Lỗi đăng nhập:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// API: Lấy danh sách users (cho admin)
+app.get('/api/users', async (req, res) => {
+  try {
+    const users = await User.find()
+      .select('ho_ten email last_login login_count createdAt')
+      .sort({ last_login: -1 });
+    res.json(users);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// API: Lấy lịch sử hoạt động
+app.get('/api/activity-logs', async (req, res) => {
+  try {
+    const limit = parseInt(req.query.limit) || 50;
+    const logs = await ActivityLog.find()
+      .sort({ timestamp: -1 })
+      .limit(limit);
+    res.json(logs);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // API: Lấy thông tin server
 app.get('/api/server-info', (req, res) => {
   const networkInterfaces = os.networkInterfaces();
@@ -102,8 +180,19 @@ app.get('/api/violation-types', async (req, res) => {
 // API: Thêm loại vi phạm mới
 app.post('/api/violation-types', async (req, res) => {
   try {
-    const { ten_vi_pham } = req.body;
+    const { ten_vi_pham, user_email, user_name } = req.body;
     const newType = await ViolationType.create({ ten_vi_pham });
+    
+    // Ghi log
+    if (user_email && user_name) {
+      await ActivityLog.create({
+        user_email,
+        user_name,
+        action: 'Thêm loại vi phạm',
+        details: `Thêm loại vi phạm mới: ${ten_vi_pham}`
+      });
+    }
+    
     updateTimestamp();
     res.json(newType);
   } catch (error) {
@@ -118,7 +207,23 @@ app.post('/api/violation-types', async (req, res) => {
 // API: Xóa loại vi phạm
 app.delete('/api/violation-types/:id', async (req, res) => {
   try {
-    await ViolationType.findByIdAndDelete(req.params.id);
+    const { user_email, user_name } = req.query;
+    const type = await ViolationType.findById(req.params.id);
+    
+    if (type) {
+      // Ghi log trước khi xóa
+      if (user_email && user_name) {
+        await ActivityLog.create({
+          user_email,
+          user_name,
+          action: 'Xóa loại vi phạm',
+          details: `Xóa loại vi phạm: ${type.ten_vi_pham}`
+        });
+      }
+      
+      await ViolationType.findByIdAndDelete(req.params.id);
+    }
+    
     updateTimestamp();
     res.json({ success: true });
   } catch (error) {
@@ -139,15 +244,63 @@ app.get('/api/violations', async (req, res) => {
 // API: Thêm vi phạm mới
 app.post('/api/violations', async (req, res) => {
   try {
-    const { nam_hoc, ho_ten, lop, noi_dung_vi_pham } = req.body;
+    const { nam_hoc, ho_ten, lop, noi_dung_vi_pham, user_email, user_name } = req.body;
     const newViolation = await Violation.create({
       nam_hoc,
       ho_ten,
       lop,
       noi_dung_vi_pham
     });
+    
+    // Ghi log
+    if (user_email && user_name) {
+      await ActivityLog.create({
+        user_email,
+        user_name,
+        action: 'Thêm vi phạm',
+        details: `Thêm vi phạm: ${ho_ten} (${lop}) - ${noi_dung_vi_pham}`
+      });
+    }
+    
     updateTimestamp();
     res.json(newViolation);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// API: Cập nhật vi phạm
+app.put('/api/violations/:id', async (req, res) => {
+  try {
+    const { ho_ten, lop, noi_dung_vi_pham, user_email, user_name } = req.body;
+    const violation = await Violation.findById(req.params.id);
+    
+    if (!violation) {
+      return res.status(404).json({ error: 'Không tìm thấy vi phạm' });
+    }
+    
+    // Lưu thông tin cũ để ghi log
+    const oldInfo = `${violation.ho_ten} (${violation.lop}) - ${violation.noi_dung_vi_pham}`;
+    const newInfo = `${ho_ten} (${lop}) - ${noi_dung_vi_pham}`;
+    
+    // Cập nhật
+    violation.ho_ten = ho_ten;
+    violation.lop = lop;
+    violation.noi_dung_vi_pham = noi_dung_vi_pham;
+    await violation.save();
+    
+    // Ghi log
+    if (user_email && user_name) {
+      await ActivityLog.create({
+        user_email,
+        user_name,
+        action: 'Sửa vi phạm',
+        details: `Sửa vi phạm: ${oldInfo} → ${newInfo}`
+      });
+    }
+    
+    updateTimestamp();
+    res.json(violation);
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -156,7 +309,23 @@ app.post('/api/violations', async (req, res) => {
 // API: Xóa vi phạm
 app.delete('/api/violations/:id', async (req, res) => {
   try {
-    await Violation.findByIdAndDelete(req.params.id);
+    const { user_email, user_name } = req.query;
+    const violation = await Violation.findById(req.params.id);
+    
+    if (violation) {
+      // Ghi log trước khi xóa
+      if (user_email && user_name) {
+        await ActivityLog.create({
+          user_email,
+          user_name,
+          action: 'Xóa vi phạm',
+          details: `Xóa vi phạm: ${violation.ho_ten} (${violation.lop})`
+        });
+      }
+      
+      await Violation.findByIdAndDelete(req.params.id);
+    }
+    
     updateTimestamp();
     res.json({ success: true });
   } catch (error) {

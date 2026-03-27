@@ -2,6 +2,113 @@ const API_URL = window.location.origin + '/api';
 let lastUpdateTime = null;
 let autoSyncInterval = null;
 
+// Kiểm tra đăng nhập
+function checkLogin() {
+    const userName = localStorage.getItem('userName');
+    const userEmail = localStorage.getItem('userEmail');
+    
+    const loginModal = document.getElementById('loginModal');
+    const mainContent = document.getElementById('mainContent');
+    const displayUserName = document.getElementById('displayUserName');
+    
+    if (!loginModal || !mainContent) {
+        return false;
+    }
+    
+    if (userName && userEmail) {
+        // Đã đăng nhập
+        loginModal.style.display = 'none';
+        mainContent.style.display = 'block';
+        if (displayUserName) {
+            displayUserName.textContent = userName;
+        }
+        return true;
+    } else {
+        // Chưa đăng nhập
+        loginModal.style.display = 'flex';
+        mainContent.style.display = 'none';
+        return false;
+    }
+}
+
+// Xử lý đăng nhập
+document.addEventListener('DOMContentLoaded', () => {
+    const loginForm = document.getElementById('loginForm');
+    
+    if (loginForm) {
+        loginForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const userName = document.getElementById('userName').value.trim();
+            const userEmail = document.getElementById('userEmail').value.trim();
+            
+            if (userName && userEmail) {
+                try {
+                    // Gửi thông tin đăng nhập lên server
+                    const response = await fetch(`${API_URL}/login`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            ho_ten: userName,
+                            email: userEmail
+                        })
+                    });
+                    
+                    const result = await response.json();
+                    
+                    if (result.success) {
+                        // Lưu thông tin vào localStorage
+                        localStorage.setItem('userName', userName);
+                        localStorage.setItem('userEmail', userEmail);
+                        localStorage.setItem('userId', result.user.id);
+                        
+                        // Hiển thị nội dung chính
+                        document.getElementById('loginModal').style.display = 'none';
+                        document.getElementById('mainContent').style.display = 'block';
+                        document.getElementById('displayUserName').textContent = userName;
+                        
+                        // Hiển thị thông báo chào mừng
+                        if (result.user.login_count === 1) {
+                            showSyncNotification(`🎉 Chào mừng ${userName}!`);
+                        } else {
+                            showSyncNotification(`👋 Chào mừng trở lại ${userName}! (Lần đăng nhập thứ ${result.user.login_count})`);
+                        }
+                        
+                        // Khởi tạo app
+                        init();
+                    } else {
+                        alert('❌ Đăng nhập thất bại. Vui lòng thử lại.');
+                    }
+                } catch (error) {
+                    console.error('Lỗi đăng nhập:', error);
+                    alert('❌ Có lỗi xảy ra. Vui lòng kiểm tra kết nối internet.');
+                }
+            }
+        });
+    }
+    
+    // Kiểm tra đăng nhập khi load trang
+    if (checkLogin()) {
+        init();
+    }
+});
+
+// Hiển thị thông tin user
+function showUserInfo() {
+    const userName = localStorage.getItem('userName');
+    const userEmail = localStorage.getItem('userEmail');
+    alert(`👤 Thông tin người dùng:\n\nHọ tên: ${userName}\nEmail: ${userEmail}`);
+}
+
+// Đăng xuất
+function logout() {
+    if (confirm('Bạn có chắc muốn đăng xuất?')) {
+        localStorage.removeItem('userName');
+        localStorage.removeItem('userEmail');
+        location.reload();
+    }
+}
+
 // Tự động đồng bộ dữ liệu
 function startAutoSync() {
     // Kiểm tra cập nhật mỗi 3 giây
@@ -77,10 +184,11 @@ async function loadViolationTypes() {
         types.forEach(type => {
             const div = document.createElement('div');
             div.className = 'checkbox-item';
+            const typeId = type._id || type.id;
             div.innerHTML = `
-                <input type="checkbox" id="vio_${type.id}" value="${type.ten_vi_pham}">
-                <label for="vio_${type.id}">${type.ten_vi_pham}</label>
-                <button class="delete-btn" onclick="deleteViolationType(${type.id})">Xóa</button>
+                <input type="checkbox" id="vio_${typeId}" value="${type.ten_vi_pham}">
+                <label for="vio_${typeId}">${type.ten_vi_pham}</label>
+                <button class="delete-btn" onclick="deleteViolationType('${typeId}', '${type.ten_vi_pham}')">Xóa</button>
             `;
             violationList.appendChild(div);
         });
@@ -100,10 +208,17 @@ document.getElementById('addViolationBtn').addEventListener('click', async () =>
     }
     
     try {
+        const userName = localStorage.getItem('userName');
+        const userEmail = localStorage.getItem('userEmail');
+        
         const response = await fetch(`${API_URL}/violation-types`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ ten_vi_pham: tenViPham })
+            body: JSON.stringify({ 
+                ten_vi_pham: tenViPham,
+                user_email: userEmail,
+                user_name: userName
+            })
         });
         
         if (response.ok) {
@@ -118,11 +233,16 @@ document.getElementById('addViolationBtn').addEventListener('click', async () =>
 });
 
 // Xóa loại vi phạm
-async function deleteViolationType(id) {
-    if (!confirm('Bạn có chắc muốn xóa loại vi phạm này?')) return;
+async function deleteViolationType(id, tenViPham) {
+    if (!confirm(`Bạn có chắc muốn xóa loại vi phạm "${tenViPham}"?`)) return;
     
     try {
-        await fetch(`${API_URL}/violation-types/${id}`, { method: 'DELETE' });
+        const userName = localStorage.getItem('userName');
+        const userEmail = localStorage.getItem('userEmail');
+        
+        await fetch(`${API_URL}/violation-types/${id}?user_email=${userEmail}&user_name=${encodeURIComponent(userName)}`, { 
+            method: 'DELETE' 
+        });
         loadViolationTypes();
     } catch (error) {
         console.error('Lỗi khi xóa loại vi phạm:', error);
@@ -130,27 +250,15 @@ async function deleteViolationType(id) {
 }
 
 // Tải danh sách vi phạm
+let allViolations = []; // Lưu toàn bộ danh sách để lọc
+
 async function loadViolations() {
     try {
         const response = await fetch(`${API_URL}/violations`);
         const violations = await response.json();
+        allViolations = violations; // Lưu vào biến global
         
-        const tbody = document.getElementById('violationTableBody');
-        tbody.innerHTML = '';
-        
-        violations.forEach((v, index) => {
-            const tr = document.createElement('tr');
-            const violationId = v._id || v.id; // Hỗ trợ cả MongoDB (_id) và JSON (id)
-            tr.innerHTML = `
-                <td>${index + 1}</td>
-                <td>${v.nam_hoc}</td>
-                <td>${v.ho_ten}</td>
-                <td>${v.lop}</td>
-                <td>${v.noi_dung_vi_pham}</td>
-                <td><button class="btn-delete" onclick="deleteViolation('${violationId}')">Xóa</button></td>
-            `;
-            tbody.appendChild(tr);
-        });
+        displayViolations(violations);
         
         // Cập nhật STT tiếp theo
         document.getElementById('stt').value = violations.length + 1;
@@ -159,17 +267,141 @@ async function loadViolations() {
     }
 }
 
+// Hiển thị danh sách vi phạm
+function displayViolations(violations) {
+    const tbody = document.getElementById('violationTableBody');
+    tbody.innerHTML = '';
+    
+    if (violations.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; padding: 30px; color: #999;">Không có dữ liệu</td></tr>';
+        return;
+    }
+    
+    violations.forEach((v, index) => {
+        const tr = document.createElement('tr');
+        const violationId = v._id || v.id;
+        tr.innerHTML = `
+            <td>${index + 1}</td>
+            <td>${v.nam_hoc}</td>
+            <td>${v.ho_ten}</td>
+            <td>${v.lop}</td>
+            <td>${v.noi_dung_vi_pham}</td>
+            <td>
+                <button class="btn-edit" onclick="editViolation('${violationId}', '${v.ho_ten}', '${v.lop}', '${v.noi_dung_vi_pham}')" style="background: #3498db; color: white; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; margin-right: 5px; font-size: 13px;">✏️</button>
+                <button class="btn-delete" onclick="deleteViolation('${violationId}')" style="background: #e74c3c; color: white; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 13px;">🗑️</button>
+            </td>
+        `;
+        tbody.appendChild(tr);
+    });
+}
+
+// Lọc vi phạm
+function filterViolations() {
+    const filterKhoi = document.getElementById('filterKhoi').value;
+    const filterLop = document.getElementById('filterLop').value.toLowerCase().trim();
+    const filterName = document.getElementById('filterName').value.toLowerCase().trim();
+    
+    let filtered = allViolations;
+    
+    // Lọc theo khối
+    if (filterKhoi) {
+        filtered = filtered.filter(v => v.lop.startsWith(filterKhoi));
+    }
+    
+    // Lọc theo lớp
+    if (filterLop) {
+        filtered = filtered.filter(v => v.lop.toLowerCase().includes(filterLop));
+    }
+    
+    // Lọc theo tên
+    if (filterName) {
+        filtered = filtered.filter(v => v.ho_ten.toLowerCase().includes(filterName));
+    }
+    
+    displayViolations(filtered);
+}
+
+// Reset bộ lọc
+function resetFilter() {
+    document.getElementById('filterKhoi').value = '';
+    document.getElementById('filterLop').value = '';
+    document.getElementById('filterName').value = '';
+    displayViolations(allViolations);
+}
+
 // Xóa vi phạm
 async function deleteViolation(id) {
     if (!confirm('Bạn có chắc muốn xóa vi phạm này?')) return;
     
     try {
-        await fetch(`${API_URL}/violations/${id}`, { method: 'DELETE' });
+        const userName = localStorage.getItem('userName');
+        const userEmail = localStorage.getItem('userEmail');
+        
+        await fetch(`${API_URL}/violations/${id}?user_email=${userEmail}&user_name=${encodeURIComponent(userName)}`, { 
+            method: 'DELETE' 
+        });
         loadViolations();
     } catch (error) {
         console.error('Lỗi khi xóa vi phạm:', error);
     }
 }
+
+// Mở modal chỉnh sửa vi phạm
+function editViolation(id, hoTen, lop, noiDung) {
+    document.getElementById('editViolationId').value = id;
+    document.getElementById('editHoTen').value = hoTen;
+    document.getElementById('editLop').value = lop;
+    document.getElementById('editNoiDung').value = noiDung;
+    document.getElementById('editViolationModal').style.display = 'block';
+}
+
+// Đóng modal chỉnh sửa
+function closeEditViolationModal() {
+    document.getElementById('editViolationModal').style.display = 'none';
+}
+
+// Xử lý form chỉnh sửa
+document.addEventListener('DOMContentLoaded', () => {
+    const editForm = document.getElementById('editViolationForm');
+    if (editForm) {
+        editForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const id = document.getElementById('editViolationId').value;
+            const hoTen = document.getElementById('editHoTen').value.trim();
+            const lop = document.getElementById('editLop').value.trim();
+            const noiDung = document.getElementById('editNoiDung').value.trim();
+            
+            const userName = localStorage.getItem('userName');
+            const userEmail = localStorage.getItem('userEmail');
+            
+            try {
+                const response = await fetch(`${API_URL}/violations/${id}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        ho_ten: hoTen,
+                        lop: lop,
+                        noi_dung_vi_pham: noiDung,
+                        user_email: userEmail,
+                        user_name: userName
+                    })
+                });
+                
+                if (response.ok) {
+                    closeEditViolationModal();
+                    loadViolations();
+                    alert('✅ Đã cập nhật vi phạm thành công!');
+                } else {
+                    alert('❌ Có lỗi xảy ra khi cập nhật');
+                }
+            } catch (error) {
+                console.error('Lỗi khi cập nhật vi phạm:', error);
+                alert('❌ Có lỗi xảy ra khi cập nhật');
+            }
+        });
+    }
+});
 
 // Xử lý form submit
 document.getElementById('violationForm').addEventListener('submit', async (e) => {
@@ -190,6 +422,9 @@ document.getElementById('violationForm').addEventListener('submit', async (e) =>
     const noiDungViPham = violations.join(', ');
     
     try {
+        const userName = localStorage.getItem('userName');
+        const userEmail = localStorage.getItem('userEmail');
+        
         const response = await fetch(`${API_URL}/violations`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -197,7 +432,9 @@ document.getElementById('violationForm').addEventListener('submit', async (e) =>
                 nam_hoc: document.getElementById('namHoc').value,
                 ho_ten: hoTen,
                 lop: lop,
-                noi_dung_vi_pham: noiDungViPham
+                noi_dung_vi_pham: noiDungViPham,
+                user_email: userEmail,
+                user_name: userName
             })
         });
         
@@ -243,13 +480,13 @@ async function exportToExcel() {
     }
 }
 
-// Khởi tạo
-document.getElementById('namHoc').value = getCurrentSchoolYear();
-loadViolationTypes();
-loadViolations();
-
-// Bắt đầu đồng bộ tự động
-startAutoSync();
+// Hàm khởi tạo app
+function init() {
+    document.getElementById('namHoc').value = getCurrentSchoolYear();
+    loadViolationTypes();
+    loadViolations();
+    startAutoSync();
+}
 
 // Dừng đồng bộ khi đóng trang
 window.addEventListener('beforeunload', () => {
@@ -510,4 +747,61 @@ function showHelpModal() {
 // Đóng modal hướng dẫn
 function closeHelpModal() {
     document.getElementById('helpModal').style.display = 'none';
+}
+
+// Hiển thị modal lịch sử hoạt động
+async function showActivityLogModal() {
+    document.getElementById('activityLogModal').style.display = 'block';
+    await loadActivityLogs();
+}
+
+// Đóng modal lịch sử
+function closeActivityLogModal() {
+    document.getElementById('activityLogModal').style.display = 'none';
+}
+
+// Tải lịch sử hoạt động
+async function loadActivityLogs() {
+    try {
+        const response = await fetch(`${API_URL}/activity-logs?limit=100`);
+        const logs = await response.json();
+        
+        const tbody = document.getElementById('activityLogTableBody');
+        tbody.innerHTML = '';
+        
+        if (logs.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; padding: 30px;">Chưa có lịch sử hoạt động</td></tr>';
+            return;
+        }
+        
+        // Màu sắc cho từng loại hành động
+        const actionColors = {
+            'Đăng nhập': '#3498db',
+            'Thêm vi phạm': '#27ae60',
+            'Xóa vi phạm': '#e74c3c',
+            'Sửa vi phạm': '#f39c12',
+            'Thêm loại vi phạm': '#9b59b6',
+            'Xóa loại vi phạm': '#e67e22',
+            'Kết thúc năm học': '#16a085',
+            'Xóa năm học': '#c0392b'
+        };
+        
+        logs.forEach((log, index) => {
+            const tr = document.createElement('tr');
+            const timestamp = new Date(log.timestamp).toLocaleString('vi-VN');
+            const color = actionColors[log.action] || '#667eea';
+            tr.innerHTML = `
+                <td>${index + 1}</td>
+                <td>${timestamp}</td>
+                <td><strong>${log.user_name}</strong><br><small style="color: #999;">${log.user_email}</small></td>
+                <td><span style="background: ${color}; color: white; padding: 6px 12px; border-radius: 6px; font-size: 13px; font-weight: 500; display: inline-block; white-space: nowrap;">${log.action}</span></td>
+                <td>${log.details}</td>
+            `;
+            tbody.appendChild(tr);
+        });
+    } catch (error) {
+        console.error('Lỗi khi tải lịch sử:', error);
+        const tbody = document.getElementById('activityLogTableBody');
+        tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; padding: 30px; color: #e74c3c;">Không thể tải lịch sử hoạt động</td></tr>';
+    }
 }
