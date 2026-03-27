@@ -336,7 +336,7 @@ app.delete('/api/violations/:id', async (req, res) => {
 // API: Lưu trữ năm học
 app.post('/api/archive-year', async (req, res) => {
   try {
-    const { nam_hoc } = req.body;
+    const { nam_hoc, user_email, user_name } = req.body;
     
     // Lấy tất cả vi phạm của năm đó
     const violations = await Violation.find({ nam_hoc });
@@ -359,6 +359,18 @@ app.post('/api/archive-year', async (req, res) => {
     
     // Xóa vi phạm của năm đó
     await Violation.deleteMany({ nam_hoc });
+    
+    // Ghi log
+    if (user_email && user_name) {
+      const [startYear, endYear] = nam_hoc.split('-').map(Number);
+      const newYear = `${startYear + 1}-${endYear + 1}`;
+      await ActivityLog.create({
+        user_email,
+        user_name,
+        action: 'Kết thúc năm học',
+        details: `Kết thúc năm học ${nam_hoc} (${violations.length} vi phạm) và chuyển sang năm ${newYear}`
+      });
+    }
     
     updateTimestamp();
     res.json({ success: true, message: `Đã lưu trữ năm học ${nam_hoc}` });
@@ -396,10 +408,23 @@ app.get('/api/archived-data/:year', async (req, res) => {
 // API: Xóa năm học đã lưu trữ
 app.delete('/api/archived-year/:year', async (req, res) => {
   try {
-    const result = await ArchivedYear.findOneAndDelete({ nam_hoc: req.params.year });
+    const { user_email, user_name } = req.query;
+    const year = req.params.year;
+    
+    const result = await ArchivedYear.findOneAndDelete({ nam_hoc: year });
     if (result) {
+      // Ghi log
+      if (user_email && user_name) {
+        await ActivityLog.create({
+          user_email,
+          user_name,
+          action: 'Xóa năm học',
+          details: `Xóa năm học ${year} (${result.total} vi phạm)`
+        });
+      }
+      
       updateTimestamp();
-      res.json({ success: true, message: `Đã xóa năm học ${req.params.year}` });
+      res.json({ success: true, message: `Đã xóa năm học ${year}` });
     } else {
       res.status(404).json({ success: false, message: 'Không tìm thấy năm học này' });
     }

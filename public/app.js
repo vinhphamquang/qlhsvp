@@ -566,10 +566,17 @@ async function archiveYear() {
     }
     
     try {
+        const userName = localStorage.getItem('userName');
+        const userEmail = localStorage.getItem('userEmail');
+        
         const response = await fetch(`${API_URL}/archive-year`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ nam_hoc: year })
+            body: JSON.stringify({ 
+                nam_hoc: year,
+                user_email: userEmail,
+                user_name: userName
+            })
         });
         
         const result = await response.json();
@@ -693,7 +700,10 @@ async function deleteArchivedYear() {
     }
     
     try {
-        const response = await fetch(`${API_URL}/archived-year/${year}`, {
+        const userName = localStorage.getItem('userName');
+        const userEmail = localStorage.getItem('userEmail');
+        
+        const response = await fetch(`${API_URL}/archived-year/${year}?user_email=${userEmail}&user_name=${encodeURIComponent(userName)}`, {
             method: 'DELETE'
         });
         
@@ -703,7 +713,6 @@ async function deleteArchivedYear() {
             alert(`✅ ${result.message}`);
             closeDeleteConfirmModal();
             closeViewArchiveModal();
-            // Có thể mở lại modal xem năm cũ để cập nhật danh sách
         } else {
             alert(`❌ ${result.message}`);
         }

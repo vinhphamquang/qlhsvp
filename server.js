@@ -182,10 +182,22 @@ initActivityLogs();
 
 // API: Lưu trữ năm học (kết thúc năm)
 app.post('/api/archive-year', (req, res) => {
-  const { nam_hoc } = req.body;
+  const { nam_hoc, user_email, user_name } = req.body;
+  
+  // Đếm số vi phạm trước khi lưu trữ
+  const data = readData();
+  const violationCount = data.violations.filter(v => v.nam_hoc === nam_hoc).length;
+  
   const success = archiveSchoolYear(nam_hoc);
   
   if (success) {
+    // Ghi log
+    if (user_email && user_name) {
+      const [startYear, endYear] = nam_hoc.split('-').map(Number);
+      const newYear = `${startYear + 1}-${endYear + 1}`;
+      logActivity(user_email, user_name, 'Kết thúc năm học', `Kết thúc năm học ${nam_hoc} (${violationCount} vi phạm) và chuyển sang năm ${newYear}`);
+    }
+    
     updateTimestamp();
     res.json({ success: true, message: `Đã lưu trữ năm học ${nam_hoc}` });
   } else {
@@ -211,12 +223,25 @@ app.get('/api/archived-data/:year', (req, res) => {
 
 // API: Xóa năm học đã lưu trữ
 app.delete('/api/archived-year/:year', (req, res) => {
-  const archiveFile = path.join('archives', `${req.params.year}.json`);
+  const { user_email, user_name } = req.query;
+  const year = req.params.year;
+  const archiveFile = path.join('archives', `${year}.json`);
   
   if (fs.existsSync(archiveFile)) {
+    // Đọc thông tin trước khi xóa để ghi log
+    const archiveData = JSON.parse(fs.readFileSync(archiveFile, 'utf8'));
+    const violationCount = archiveData.total || archiveData.violations.length;
+    
+    // Xóa file
     fs.unlinkSync(archiveFile);
+    
+    // Ghi log
+    if (user_email && user_name) {
+      logActivity(user_email, user_name, 'Xóa năm học', `Xóa năm học ${year} (${violationCount} vi phạm)`);
+    }
+    
     updateTimestamp();
-    res.json({ success: true, message: `Đã xóa năm học ${req.params.year}` });
+    res.json({ success: true, message: `Đã xóa năm học ${year}` });
   } else {
     res.status(404).json({ success: false, message: 'Không tìm thấy năm học này' });
   }
