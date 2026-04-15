@@ -12,7 +12,7 @@ const activityLogSchema = new mongoose.Schema({
   action: {
     type: String,
     required: true,
-    enum: ['Thêm vi phạm', 'Xóa vi phạm', 'Sửa vi phạm', 'Thêm loại vi phạm', 'Xóa loại vi phạm', 'Kết thúc năm học', 'Xóa năm học', 'Đăng nhập']
+    enum: ['Thêm vi phạm', 'Xóa vi phạm', 'Sửa vi phạm', 'Thêm loại vi phạm', 'Xóa loại vi phạm', 'Kết thúc năm học', 'Xóa năm học', 'Khôi phục năm học', 'Đăng nhập']
   },
   details: {
     type: String,

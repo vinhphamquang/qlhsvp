@@ -433,6 +433,50 @@ app.delete('/api/archived-year/:year', async (req, res) => {
   }
 });
 
+// API: Khôi phục năm học từ lưu trữ
+app.post('/api/restore-year', async (req, res) => {
+  try {
+    const { nam_hoc, user_email, user_name } = req.body;
+    
+    // Tìm dữ liệu năm học trong archive
+    const archivedData = await ArchivedYear.findOne({ nam_hoc });
+    
+    if (!archivedData) {
+      return res.status(404).json({ success: false, message: 'Không tìm thấy năm học này trong kho lưu trữ' });
+    }
+    
+    // Khôi phục dữ liệu vào collection chính
+    const violations = archivedData.violations.map(v => ({
+      nam_hoc,
+      ho_ten: v.ho_ten,
+      lop: v.lop,
+      noi_dung_vi_pham: v.noi_dung_vi_pham,
+      ngay_tao: v.ngay_tao
+    }));
+    
+    await Violation.insertMany(violations);
+    
+    // Xóa khỏi archive
+    await ArchivedYear.findOneAndDelete({ nam_hoc });
+    
+    // Ghi log
+    if (user_email && user_name) {
+      await ActivityLog.create({
+        user_email,
+        user_name,
+        action: 'Khôi phục năm học',
+        details: `Khôi phục năm học ${nam_hoc} (${violations.length} vi phạm) từ kho lưu trữ`
+      });
+    }
+    
+    updateTimestamp();
+    res.json({ success: true, message: `Đã khôi phục năm học ${nam_hoc}` });
+  } catch (error) {
+    console.error('Lỗi khi khôi phục năm học:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // API: Xuất file Excel
 app.get('/api/export-excel', async (req, res) => {
   try {

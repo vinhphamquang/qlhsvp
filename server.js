@@ -247,6 +247,54 @@ app.delete('/api/archived-year/:year', (req, res) => {
   }
 });
 
+// API: Khôi phục năm học từ lưu trữ
+app.post('/api/restore-year', (req, res) => {
+  try {
+    const { nam_hoc, user_email, user_name } = req.body;
+    const archiveFile = path.join('archives', `${nam_hoc}.json`);
+    
+    // Kiểm tra file archive có tồn tại không
+    if (!fs.existsSync(archiveFile)) {
+      return res.status(404).json({ success: false, message: 'Không tìm thấy năm học này trong kho lưu trữ' });
+    }
+    
+    // Đọc dữ liệu từ archive
+    const archiveData = JSON.parse(fs.readFileSync(archiveFile, 'utf8'));
+    
+    // Đọc dữ liệu hiện tại
+    const data = readData();
+    
+    // Khôi phục vi phạm vào danh sách chính
+    archiveData.violations.forEach(v => {
+      data.violations.push({
+        id: data.nextViolationId++,
+        nam_hoc,
+        ho_ten: v.ho_ten,
+        lop: v.lop,
+        noi_dung_vi_pham: v.noi_dung_vi_pham,
+        ngay_tao: v.ngay_tao
+      });
+    });
+    
+    // Lưu dữ liệu
+    writeData(data);
+    
+    // Xóa file archive
+    fs.unlinkSync(archiveFile);
+    
+    // Ghi log
+    if (user_email && user_name) {
+      logActivity(user_email, user_name, 'Khôi phục năm học', `Khôi phục năm học ${nam_hoc} (${archiveData.violations.length} vi phạm) từ kho lưu trữ`);
+    }
+    
+    updateTimestamp();
+    res.json({ success: true, message: `Đã khôi phục năm học ${nam_hoc}` });
+  } catch (error) {
+    console.error('Lỗi khi khôi phục năm học:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // API: Lấy thời gian cập nhật cuối
 app.get('/api/last-update', (req, res) => {
   res.json({ lastUpdate: lastUpdateTimestamp });

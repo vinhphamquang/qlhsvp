@@ -639,8 +639,9 @@ async function viewArchivedYear(year) {
         const viewDiv = document.getElementById('archivedDataView');
         viewDiv.innerHTML = `
             <h3 style="margin-top: 30px; color: #667eea;">📊 Dữ liệu năm học ${year}</h3>
-            <div style="margin-bottom: 15px; display: flex; gap: 10px;">
+            <div style="margin-bottom: 15px; display: flex; gap: 10px; flex-wrap: wrap;">
                 <button class="btn-export" onclick="exportArchivedToExcel('${year}')">📥 Xuất Excel</button>
+                <button class="btn-archive" onclick="confirmRestoreYear('${year}')" style="background: #27ae60;">♻️ Khôi phục năm học</button>
                 <button class="btn-delete" onclick="confirmDeleteYear('${year}')">🗑️ Xóa năm học</button>
             </div>
             <div class="table-container">
@@ -722,6 +723,56 @@ async function deleteArchivedYear() {
     }
 }
 
+// Xác nhận khôi phục năm học (bước 1)
+function confirmRestoreYear(year) {
+    const modal = document.getElementById('restoreConfirmModal');
+    document.getElementById('yearToRestore').textContent = year;
+    document.getElementById('restoreYearValue').value = year;
+    modal.style.display = 'block';
+}
+
+// Đóng modal xác nhận khôi phục
+function closeRestoreConfirmModal() {
+    document.getElementById('restoreConfirmModal').style.display = 'none';
+}
+
+// Khôi phục năm học (bước 2 - sau khi xác nhận)
+async function restoreArchivedYear() {
+    const year = document.getElementById('restoreYearValue').value;
+    
+    try {
+        const userName = localStorage.getItem('userName');
+        const userEmail = localStorage.getItem('userEmail');
+        
+        const response = await fetch(`${API_URL}/restore-year`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                nam_hoc: year,
+                user_email: userEmail,
+                user_name: userName
+            })
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            // Cập nhật năm học hiện tại
+            document.getElementById('namHoc').value = year;
+            
+            alert(`✅ ${result.message}\n\n🎓 Đã chuyển về năm học ${year}\n📝 Bạn có thể tiếp tục thao tác với năm này`);
+            closeRestoreConfirmModal();
+            closeViewArchiveModal();
+            loadViolations();
+        } else {
+            alert(`❌ ${result.message}`);
+        }
+    } catch (error) {
+        console.error('Lỗi khi khôi phục năm học:', error);
+        alert('Có lỗi xảy ra khi khôi phục năm học');
+    }
+}
+
 // Xuất Excel cho năm đã lưu trữ
 async function exportArchivedToExcel(year) {
     window.location.href = `${API_URL}/export-archived-excel/${year}`;
@@ -732,6 +783,7 @@ window.onclick = function(event) {
     const archiveModal = document.getElementById('archiveModal');
     const viewModal = document.getElementById('viewArchiveModal');
     const deleteModal = document.getElementById('deleteConfirmModal');
+    const restoreModal = document.getElementById('restoreConfirmModal');
     const helpModal = document.getElementById('helpModal');
     
     if (event.target === archiveModal) {
@@ -742,6 +794,9 @@ window.onclick = function(event) {
     }
     if (event.target === deleteModal) {
         closeDeleteConfirmModal();
+    }
+    if (event.target === restoreModal) {
+        closeRestoreConfirmModal();
     }
     if (event.target === helpModal) {
         closeHelpModal();
@@ -792,7 +847,8 @@ async function loadActivityLogs() {
             'Thêm loại vi phạm': '#9b59b6',
             'Xóa loại vi phạm': '#e67e22',
             'Kết thúc năm học': '#16a085',
-            'Xóa năm học': '#c0392b'
+            'Xóa năm học': '#c0392b',
+            'Khôi phục năm học': '#27ae60'
         };
         
         logs.forEach((log, index) => {

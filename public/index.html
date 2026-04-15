@@ -269,6 +269,41 @@
         </div>
     </div>
 
+    <!-- Modal xác nhận khôi phục năm học -->
+    <div id="restoreConfirmModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeRestoreConfirmModal()">&times;</span>
+            <h2 style="color: #27ae60;">♻️ Xác nhận khôi phục năm học</h2>
+            
+            <div style="background: #d1ecf1; padding: 15px; border-radius: 8px; border-left: 4px solid #17a2b8; margin: 20px 0;">
+                <p style="margin: 5px 0; color: #0c5460;"><strong>ℹ️ THÔNG TIN:</strong></p>
+                <p style="margin: 5px 0; color: #0c5460;">Bạn đang chuẩn bị khôi phục năm học: <strong id="yearToRestore"></strong></p>
+            </div>
+            
+            <div style="background: #d4edda; padding: 15px; border-radius: 8px; border-left: 4px solid #28a745; margin: 20px 0;">
+                <p style="margin: 5px 0; color: #155724;"><strong>✅ Điều gì sẽ xảy ra:</strong></p>
+                <ul style="margin: 10px 0; padding-left: 20px; color: #155724;">
+                    <li>Dữ liệu năm học này sẽ được đưa trở lại danh sách chính</li>
+                    <li>Bạn có thể tiếp tục thêm, sửa, xóa vi phạm</li>
+                    <li>Năm học hiện tại sẽ chuyển về năm này</li>
+                    <li>Dữ liệu sẽ bị xóa khỏi kho lưu trữ</li>
+                </ul>
+            </div>
+            
+            <div style="background: #fff3cd; padding: 15px; border-radius: 8px; border-left: 4px solid #ffc107; margin: 20px 0;">
+                <p style="margin: 5px 0; color: #856404;"><strong>⚠️ LƯU Ý:</strong></p>
+                <p style="margin: 5px 0; color: #856404;">Nếu đang có dữ liệu năm học hiện tại, hãy kết thúc năm học đó trước khi khôi phục!</p>
+            </div>
+            
+            <input type="hidden" id="restoreYearValue">
+            
+            <div style="display: flex; gap: 10px; margin-top: 20px;">
+                <button class="btn-archive" onclick="restoreArchivedYear()" style="flex: 1; background: #27ae60;">♻️ Xác nhận khôi phục</button>
+                <button class="btn-cancel" onclick="closeRestoreConfirmModal()" style="flex: 1;">Hủy bỏ</button>
+            </div>
+        </div>
+    </div>
+
     <!-- Modal lịch sử hoạt động -->
     <div id="activityLogModal" class="modal">
         <div class="modal-content modal-large">
