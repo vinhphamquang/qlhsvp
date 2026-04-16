@@ -454,15 +454,17 @@ app.get('/api/violations', (req, res) => {
 
 // API: Thêm vi phạm mới
 app.post('/api/violations', (req, res) => {
-  const { nam_hoc, ho_ten, lop, noi_dung_vi_pham, user_email, user_name } = req.body;
+  const { nam_hoc, ngay_vi_pham, ho_ten, lop, noi_dung_vi_pham, ghi_chu, user_email, user_name } = req.body;
   const data = readData();
   
   const newViolation = {
     id: data.nextViolationId++,
     nam_hoc,
+    ngay_vi_pham,
     ho_ten,
     lop,
     noi_dung_vi_pham,
+    ghi_chu: ghi_chu || '',
     ngay_tao: new Date().toISOString()
   };
   
@@ -497,7 +499,7 @@ app.delete('/api/violations/:id', (req, res) => {
 
 // API: Cập nhật vi phạm
 app.put('/api/violations/:id', (req, res) => {
-  const { ho_ten, lop, noi_dung_vi_pham, user_email, user_name } = req.body;
+  const { ho_ten, lop, noi_dung_vi_pham, ngay_vi_pham, ghi_chu, user_email, user_name } = req.body;
   const data = readData();
   const violation = data.violations.find(v => v.id === parseInt(req.params.id));
   
@@ -513,6 +515,8 @@ app.put('/api/violations/:id', (req, res) => {
   violation.ho_ten = ho_ten;
   violation.lop = lop;
   violation.noi_dung_vi_pham = noi_dung_vi_pham;
+  if (ngay_vi_pham) violation.ngay_vi_pham = ngay_vi_pham;
+  violation.ghi_chu = ghi_chu || '';
   
   writeData(data);
   

@@ -83,13 +83,31 @@
                 </div>
                 
                 <div class="form-group">
+                    <label>Ngày vi phạm: <span class="required">*</span></label>
+                    <input type="date" id="ngayViPham" required>
+                </div>
+                
+                <div class="form-group">
                     <label>Họ tên học sinh: <span class="required">*</span></label>
                     <input type="text" id="hoTen" required placeholder="Nhập họ tên học sinh">
                 </div>
                 
                 <div class="form-group">
+                    <label>Khối: <span class="required">*</span></label>
+                    <select id="khoi" required onchange="updateLopOptions()">
+                        <option value="">-- Chọn khối --</option>
+                        <option value="6">Khối 6</option>
+                        <option value="7">Khối 7</option>
+                        <option value="8">Khối 8</option>
+                        <option value="9">Khối 9</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
                     <label>Lớp: <span class="required">*</span></label>
-                    <input type="text" id="lop" required placeholder="Ví dụ: 6, 7, 8, 9" pattern="[0-9]+" title="Chỉ được nhập số" inputmode="numeric">
+                    <select id="lop" required disabled>
+                        <option value="">-- Chọn khối trước --</option>
+                    </select>
                 </div>
                 
                 <div class="form-group">
@@ -101,6 +119,11 @@
                             <button type="button" id="addViolationBtn">+ Thêm</button>
                         </div>
                     </div>
+                </div>
+                
+                <div class="form-group">
+                    <label>Ghi chú:</label>
+                    <textarea id="ghiChu" placeholder="Nhập ghi chú (không bắt buộc)" rows="3" style="width: 100%; padding: 14px 18px; border: 2px solid #bdc3c7; border-radius: 10px; font-size: 15px; font-family: inherit; resize: vertical;"></textarea>
                 </div>
                 
                 <button type="submit" class="btn-primary">Lưu Vi Phạm</button>
@@ -151,9 +174,11 @@
                         <tr>
                             <th>STT</th>
                             <th>Năm học</th>
+                            <th>Ngày</th>
                             <th>Họ tên</th>
                             <th>Lớp</th>
                             <th>Nội dung vi phạm</th>
+                            <th>Ghi chú</th>
                             <th>Thao tác</th>
                         </tr>
                     </thead>
@@ -215,18 +240,41 @@
                 <input type="hidden" id="editViolationId">
                 
                 <div class="form-group">
+                    <label>Ngày vi phạm: <span class="required">*</span></label>
+                    <input type="date" id="editNgayViPham" required>
+                </div>
+                
+                <div class="form-group">
                     <label>Họ tên: <span class="required">*</span></label>
                     <input type="text" id="editHoTen" required>
                 </div>
                 
                 <div class="form-group">
+                    <label>Khối: <span class="required">*</span></label>
+                    <select id="editKhoi" required onchange="updateEditLopOptions()">
+                        <option value="">-- Chọn khối --</option>
+                        <option value="6">Khối 6</option>
+                        <option value="7">Khối 7</option>
+                        <option value="8">Khối 8</option>
+                        <option value="9">Khối 9</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
                     <label>Lớp: <span class="required">*</span></label>
-                    <input type="text" id="editLop" required pattern="[0-9]+" title="Chỉ được nhập số" inputmode="numeric">
+                    <select id="editLop" required disabled>
+                        <option value="">-- Chọn khối trước --</option>
+                    </select>
                 </div>
                 
                 <div class="form-group">
                     <label>Nội dung vi phạm: <span class="required">*</span></label>
                     <textarea id="editNoiDung" required rows="3" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 8px; font-family: inherit;"></textarea>
+                </div>
+                
+                <div class="form-group">
+                    <label>Ghi chú:</label>
+                    <textarea id="editGhiChu" placeholder="Nhập ghi chú (không bắt buộc)" rows="3" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 8px; font-family: inherit; resize: vertical;"></textarea>
                 </div>
                 
                 <div style="display: flex; gap: 10px; margin-top: 20px;">

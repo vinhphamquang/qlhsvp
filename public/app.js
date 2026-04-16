@@ -273,21 +273,33 @@ function displayViolations(violations) {
     tbody.innerHTML = '';
     
     if (violations.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; padding: 30px; color: #999;">Không có dữ liệu</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="8" style="text-align: center; padding: 30px; color: #999;">Không có dữ liệu</td></tr>';
         return;
     }
     
     violations.forEach((v, index) => {
         const tr = document.createElement('tr');
         const violationId = v._id || v.id;
+        const ngayViPham = v.ngay_vi_pham ? new Date(v.ngay_vi_pham).toLocaleDateString('vi-VN') : '';
+        const ghiChu = v.ghi_chu || '';
+        
+        // Escape các ký tự đặc biệt cho onclick
+        const hoTenEscaped = (v.ho_ten || '').replace(/'/g, "\\'");
+        const lopEscaped = (v.lop || '').replace(/'/g, "\\'");
+        const noiDungEscaped = (v.noi_dung_vi_pham || '').replace(/'/g, "\\'");
+        const ngayEscaped = (v.ngay_vi_pham || '').replace(/'/g, "\\'");
+        const ghiChuEscaped = ghiChu.replace(/'/g, "\\'");
+        
         tr.innerHTML = `
             <td>${index + 1}</td>
             <td>${v.nam_hoc}</td>
+            <td>${ngayViPham}</td>
             <td>${v.ho_ten}</td>
             <td>${v.lop}</td>
             <td>${v.noi_dung_vi_pham}</td>
+            <td style="max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${ghiChu}">${ghiChu}</td>
             <td>
-                <button class="btn-edit" onclick="editViolation('${violationId}', '${v.ho_ten}', '${v.lop}', '${v.noi_dung_vi_pham}')" style="background: #3498db; color: white; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; margin-right: 5px; font-size: 13px;">✏️</button>
+                <button class="btn-edit" onclick="editViolation('${violationId}', '${hoTenEscaped}', '${lopEscaped}', '${noiDungEscaped}', '${ngayEscaped}', '${ghiChuEscaped}')" style="background: #3498db; color: white; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; margin-right: 5px; font-size: 13px;">✏️</button>
                 <button class="btn-delete" onclick="deleteViolation('${violationId}')" style="background: #e74c3c; color: white; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 13px;">🗑️</button>
             </td>
         `;
@@ -347,11 +359,26 @@ async function deleteViolation(id) {
 }
 
 // Mở modal chỉnh sửa vi phạm
-function editViolation(id, hoTen, lop, noiDung) {
+function editViolation(id, hoTen, lop, noiDung, ngayViPham, ghiChu) {
     document.getElementById('editViolationId').value = id;
     document.getElementById('editHoTen').value = hoTen;
-    document.getElementById('editLop').value = lop;
     document.getElementById('editNoiDung').value = noiDung;
+    document.getElementById('editNgayViPham').value = ngayViPham || '';
+    document.getElementById('editGhiChu').value = ghiChu || '';
+    
+    // Tách khối và lớp từ giá trị lớp (ví dụ: "6/1" -> khối: "6", lớp: "6/1")
+    if (lop && lop.includes('/')) {
+        const khoi = lop.split('/')[0];
+        document.getElementById('editKhoi').value = khoi;
+        updateEditLopOptions();
+        document.getElementById('editLop').value = lop;
+    } else {
+        // Nếu không có dấu /, reset về mặc định
+        document.getElementById('editKhoi').value = '';
+        document.getElementById('editLop').innerHTML = '<option value="">-- Chọn khối trước --</option>';
+        document.getElementById('editLop').disabled = true;
+    }
+    
     document.getElementById('editViolationModal').style.display = 'block';
 }
 
@@ -371,6 +398,8 @@ document.addEventListener('DOMContentLoaded', () => {
             const hoTen = document.getElementById('editHoTen').value.trim();
             const lop = document.getElementById('editLop').value.trim();
             const noiDung = document.getElementById('editNoiDung').value.trim();
+            const ngayViPham = document.getElementById('editNgayViPham').value;
+            const ghiChu = document.getElementById('editGhiChu').value.trim();
             
             const userName = localStorage.getItem('userName');
             const userEmail = localStorage.getItem('userEmail');
@@ -383,6 +412,8 @@ document.addEventListener('DOMContentLoaded', () => {
                         ho_ten: hoTen,
                         lop: lop,
                         noi_dung_vi_pham: noiDung,
+                        ngay_vi_pham: ngayViPham,
+                        ghi_chu: ghiChu,
                         user_email: userEmail,
                         user_name: userName
                     })
@@ -409,6 +440,8 @@ document.getElementById('violationForm').addEventListener('submit', async (e) =>
     
     const hoTen = document.getElementById('hoTen').value.trim();
     const lop = document.getElementById('lop').value.trim();
+    const ngayViPham = document.getElementById('ngayViPham').value;
+    const ghiChu = document.getElementById('ghiChu').value.trim();
     
     // Lấy các vi phạm đã chọn
     const checkedBoxes = document.querySelectorAll('#violationList input[type="checkbox"]:checked');
@@ -430,9 +463,11 @@ document.getElementById('violationForm').addEventListener('submit', async (e) =>
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 nam_hoc: document.getElementById('namHoc').value,
+                ngay_vi_pham: ngayViPham,
                 ho_ten: hoTen,
                 lop: lop,
                 noi_dung_vi_pham: noiDungViPham,
+                ghi_chu: ghiChu,
                 user_email: userEmail,
                 user_name: userName
             })
@@ -441,7 +476,14 @@ document.getElementById('violationForm').addEventListener('submit', async (e) =>
         if (response.ok) {
             // Reset form
             document.getElementById('hoTen').value = '';
+            document.getElementById('khoi').value = '';
             document.getElementById('lop').value = '';
+            document.getElementById('lop').disabled = true;
+            document.getElementById('lop').innerHTML = '<option value="">-- Chọn khối trước --</option>';
+            document.getElementById('ghiChu').value = '';
+            // Reset ngày về hôm nay
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('ngayViPham').value = today;
             checkedBoxes.forEach(cb => cb.checked = false);
             
             // Reload danh sách
@@ -480,9 +522,58 @@ async function exportToExcel() {
     }
 }
 
+// Cập nhật danh sách lớp khi chọn khối (form thêm mới)
+function updateLopOptions() {
+    const khoi = document.getElementById('khoi').value;
+    const lopSelect = document.getElementById('lop');
+    
+    if (!khoi) {
+        lopSelect.disabled = true;
+        lopSelect.innerHTML = '<option value="">-- Chọn khối trước --</option>';
+        return;
+    }
+    
+    lopSelect.disabled = false;
+    lopSelect.innerHTML = '<option value="">-- Chọn lớp --</option>';
+    
+    // Tạo các lớp từ /1 đến /6
+    for (let i = 1; i <= 6; i++) {
+        const option = document.createElement('option');
+        option.value = `${khoi}/${i}`;
+        option.textContent = `${khoi}/${i}`;
+        lopSelect.appendChild(option);
+    }
+}
+
+// Cập nhật danh sách lớp khi chọn khối (form chỉnh sửa)
+function updateEditLopOptions() {
+    const khoi = document.getElementById('editKhoi').value;
+    const lopSelect = document.getElementById('editLop');
+    
+    if (!khoi) {
+        lopSelect.disabled = true;
+        lopSelect.innerHTML = '<option value="">-- Chọn khối trước --</option>';
+        return;
+    }
+    
+    lopSelect.disabled = false;
+    lopSelect.innerHTML = '<option value="">-- Chọn lớp --</option>';
+    
+    // Tạo các lớp từ /1 đến /6
+    for (let i = 1; i <= 6; i++) {
+        const option = document.createElement('option');
+        option.value = `${khoi}/${i}`;
+        option.textContent = `${khoi}/${i}`;
+        lopSelect.appendChild(option);
+    }
+}
+
 // Hàm khởi tạo app
 function init() {
     document.getElementById('namHoc').value = getCurrentSchoolYear();
+    // Set ngày mặc định là hôm nay
+    const today = new Date().toISOString().split('T')[0];
+    document.getElementById('ngayViPham').value = today;
     loadViolationTypes();
     loadViolations();
     startAutoSync();

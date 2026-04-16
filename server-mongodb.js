@@ -244,12 +244,14 @@ app.get('/api/violations', async (req, res) => {
 // API: Thêm vi phạm mới
 app.post('/api/violations', async (req, res) => {
   try {
-    const { nam_hoc, ho_ten, lop, noi_dung_vi_pham, user_email, user_name } = req.body;
+    const { nam_hoc, ngay_vi_pham, ho_ten, lop, noi_dung_vi_pham, ghi_chu, user_email, user_name } = req.body;
     const newViolation = await Violation.create({
       nam_hoc,
+      ngay_vi_pham,
       ho_ten,
       lop,
-      noi_dung_vi_pham
+      noi_dung_vi_pham,
+      ghi_chu: ghi_chu || ''
     });
     
     // Ghi log
@@ -272,7 +274,7 @@ app.post('/api/violations', async (req, res) => {
 // API: Cập nhật vi phạm
 app.put('/api/violations/:id', async (req, res) => {
   try {
-    const { ho_ten, lop, noi_dung_vi_pham, user_email, user_name } = req.body;
+    const { ho_ten, lop, noi_dung_vi_pham, ngay_vi_pham, ghi_chu, user_email, user_name } = req.body;
     const violation = await Violation.findById(req.params.id);
     
     if (!violation) {
@@ -287,6 +289,8 @@ app.put('/api/violations/:id', async (req, res) => {
     violation.ho_ten = ho_ten;
     violation.lop = lop;
     violation.noi_dung_vi_pham = noi_dung_vi_pham;
+    if (ngay_vi_pham) violation.ngay_vi_pham = ngay_vi_pham;
+    violation.ghi_chu = ghi_chu || '';
     await violation.save();
     
     // Ghi log
